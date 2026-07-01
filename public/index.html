@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Gate Guide</title>
+    <link rel="manifest" href="/manifest.webmanifest">
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="command-panel" aria-label="Trip setup and controls">
+        <div class="brand-row">
+          <div>
+            <p class="eyebrow">Gate Guide</p>
+            <h1>Live gate guidance</h1>
+          </div>
+          <span class="status-pill" id="provider-health">Demo provider</span>
+        </div>
+
+        <form id="flight-form" class="flight-form">
+          <label>
+            Airline
+            <input id="airline" autocomplete="off" value="AA" maxlength="3" required>
+          </label>
+          <label>
+            Flight
+            <input id="flight-number" autocomplete="off" value="1442" required>
+          </label>
+          <label>
+            Date
+            <input id="flight-date" type="date" required>
+          </label>
+          <button type="submit">Track flight</button>
+        </form>
+
+        <div class="control-grid">
+          <button id="locate-security" type="button">Start at security</button>
+          <button id="locate-arrival" type="button">Start at arrival</button>
+          <button id="use-gps" type="button">Use GPS</button>
+          <label class="toggle-row">
+            <input id="accessible-mode" type="checkbox">
+            Accessible route
+          </label>
+        </div>
+
+        <section class="info-panel" aria-label="Current flight">
+          <h2>Flight</h2>
+          <div id="flight-card" class="flight-card"></div>
+        </section>
+
+        <section class="info-panel" aria-label="Wi-Fi assistance">
+          <h2>Wi-Fi</h2>
+          <div id="wifi-card" class="wifi-card"></div>
+          <button id="join-wifi" type="button">Connect to airport Wi-Fi</button>
+        </section>
+
+        <section class="info-panel" aria-label="Alerts">
+          <h2>Alerts</h2>
+          <ul id="alerts" class="alerts"></ul>
+        </section>
+      </section>
+
+      <section class="map-panel" aria-label="Airport map and route">
+        <div class="map-toolbar">
+          <div>
+            <p class="eyebrow">DFW Demo Terminal A</p>
+            <h2 id="route-title">Route to gate A18</h2>
+          </div>
+          <div class="route-meta" id="route-meta"></div>
+        </div>
+        <svg id="map" class="terminal-map" viewBox="0 0 920 560" role="img" aria-label="Scaled terminal map with route"></svg>
+        <ol id="route-steps" class="route-steps"></ol>
+      </section>
+    </main>
+
+    <script type="module" src="/app-assets/app.js"></script>
+  </body>
+</html>

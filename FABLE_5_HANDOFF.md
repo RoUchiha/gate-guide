@@ -1,0 +1,265 @@
+# Gate Guide Handoff For Fable 5
+
+Date: 2026-07-01
+Workspace: `C:\Users\swagg\.claude\gate-guide`
+Live demo: https://gate-guide-ashen.vercel.app
+Vercel project: `rouchihas-projects/gate-guide`
+
+## Executive Summary
+
+Gate Guide is a spec-driven airport navigation PWA for routing travelers through airports to the correct gate. It currently runs as a dependency-light JavaScript app with a Vercel serverless entrypoint. The app has demo data for DFW Terminal A, but the production seams are now in place for live flight data and production airport map bundles.
+
+The important product truth: accurate scaled airport maps for all airports cannot be scraped or guessed. Production routing requires airport-approved indoor map data, a licensed indoor map provider, or an airport/airline map bundle service. Gate Guide now supports that through production map catalogs and strict production-map mode.
+
+## Current Live State
+
+- Stable URL: https://gate-guide-ashen.vercel.app
+- Latest production deployment at handoff time: `dpl_Hotnfh1Puq2HivY4rxnEv6AjmKGV`
+- Current live provider status with no env keys configured:
+  - `flight`: `demo`
+  - `airportMap`: `demo`
+  - `productionMapsRequired`: `false`
+  - `wifi`: `client-native-bridge-or-manual`
+- The UI is expected to show `Flight: demo | Map: demo (fallback allowed)` until Vercel env vars are added.
+
+## What Exists
+
+### Specs
+
+- `docs/specs/product-requirements.md`
+- `docs/specs/system-architecture.md`
+- `docs/specs/data-contracts.md`
+- `docs/specs/acceptance-tests.md`
+- `docs/specs/provider-integrations.md`
+
+### Runtime
+
+- `index.js`
+  - Vercel-compatible serverless entrypoint.
+  - Serves static PWA assets from `public/`.
+  - Handles API endpoints:
+    - `GET /api/providers`
+    - `GET /api/flight`
+    - `GET /api/airport-map`
+    - `GET /api/airport-map/catalog`
+- `server/providers.js`
+  - FlightAware AeroAPI adapter.
+  - Production airport map catalog and bundle loader.
+  - Map validation and diagnostics.
+  - Demo fallback behavior.
+- `public/app-assets/app.js`
+  - Browser UI state, route rendering, provider status display, flight form, map loading.
+- `public/app-assets/router.js`
+  - Weighted routing with closure and accessibility support.
+- `public/app-assets/flight-provider.js`
+  - Browser-side API flight provider with demo fallback.
+- `public/app-assets/positioning.js`
+  - Browser/manual location confidence helpers.
+- `public/app-assets/wifi-assistant.js`
+  - Web/manual Wi-Fi guidance plus native bridge seam.
+- `public/app-assets/sample-data.js`
+  - Demo DFW map and Wi-Fi profile.
+
+### Tests
+
+- `tests/router.test.js`
+- `tests/flight-provider.test.js`
+- `tests/positioning.test.js`
+- `tests/wifi-assistant.test.js`
+- `tests/providers.test.js`
+
+Last verified locally:
+
+```powershell
+npm.cmd run check
+npm.cmd test
+npm.cmd run build
+```
+
+Result: `21/21` tests passing.
+
+## Provider Configuration
+
+### Live Flight Data
+
+Use FlightAware AeroAPI.
+
+Required Vercel env var:
+
+```text
+FLIGHTAWARE_AEROAPI_KEY=...
+```
+
+Endpoint used by Gate Guide:
+
+```text
+GET https://aeroapi.flightaware.com/aeroapi/flights/{AIRLINE}{FLIGHT_NUMBER}
+```
+
+Gate Guide normalizes FlightAware fields into the app's `FlightLeg` contract.
+
+### Production Airport Maps
+
+Preferred production setup is a catalog:
+
+```text
+GATE_GUIDE_MAP_MODE=production
+AIRPORT_MAP_CATALOG_URL=https://your-secure-map-host.example.com/catalog.json
+AIRPORT_MAP_BUNDLE_TOKEN=optional-bearer-token
+```
+
+Catalog shape:
+
+```json
+{
+  "source": "airport-gis-or-map-provider",
+  "version": "2026.07",
+  "entries": [
+    {
+      "airportCode": "DFW",
+      "bundleUrl": "https://your-secure-map-host.example.com/maps/DFW.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026.07",
+      "updatedAt": "2026-07-01T00:00:00Z",
+      "source": "airport-owned-imdf-export",
+      "checksum": "sha256-..."
+    }
+  ]
+}
+```
+
+Direct bundle mode is also supported:
+
+```text
+AIRPORT_MAP_BUNDLE_BASE_URL=https://your-secure-map-host.example.com/maps
+AIRPORT_MAP_BUNDLE_TOKEN=optional-bearer-token
+```
+
+In direct mode, Gate Guide calls:
+
+```text
+GET {AIRPORT_MAP_BUNDLE_BASE_URL}/{IATA_CODE}.json
+```
+
+If `GATE_GUIDE_MAP_MODE=production` is set and no production map is available, `/api/airport-map` returns `503` and the UI blocks demo routing.
+
+## AirportMap Contract
+
+Production bundles must include:
+
+- `airportCode`
+- `version`
+- `scale.unit`
+- `scale.pixelsPerMeter`
+- `floors`
+- `nodes`
+- `edges`
+- `places`
+- optional `closures`
+
+Validation currently checks:
+
+- required schema fields;
+- scaled units;
+- at least one gate;
+- edges referencing known nodes;
+- floor metadata warnings;
+- source/provenance warnings;
+- security checkpoint warnings.
+
+## Vercel Env Setup
+
+Run from `C:\Users\swagg\.claude\gate-guide` after GitHub/Vercel auth is available:
+
+```powershell
+npx.cmd --yes vercel@latest env add FLIGHTAWARE_AEROAPI_KEY production
+npx.cmd --yes vercel@latest env add GATE_GUIDE_MAP_MODE production
+npx.cmd --yes vercel@latest env add AIRPORT_MAP_CATALOG_URL production
+npx.cmd --yes vercel@latest env add AIRPORT_MAP_BUNDLE_TOKEN production
+npx.cmd --yes vercel@latest deploy --prod --yes
+```
+
+Verify after deploy:
+
+```powershell
+Invoke-RestMethod https://gate-guide-ashen.vercel.app/api/providers
+Invoke-RestMethod https://gate-guide-ashen.vercel.app/api/airport-map/catalog
+Invoke-RestMethod "https://gate-guide-ashen.vercel.app/api/airport-map?airport=DFW"
+```
+
+## Local Development
+
+```powershell
+npm.cmd start
+```
+
+Open:
+
+```text
+http://127.0.0.1:4173
+```
+
+Useful strict-map local check:
+
+```powershell
+$env:GATE_GUIDE_MAP_MODE='production'
+npm.cmd start
+```
+
+Expected without map env vars:
+
+- `/api/providers` reports `missing-production-map-provider`.
+- `/api/airport-map?airport=DFW` returns `503`.
+- UI shows production map blocked instead of silently using demo routing.
+
+## Deployment Notes
+
+The Vercel project is intentionally using `index.js` as the root serverless entrypoint. Browser modules live under `public/app-assets/` because Vercel previously treated `public/src/app.js` as a serverless entrypoint and crashed with `ReferenceError: document is not defined`.
+
+Do not move browser code back to `public/src/app.js` unless the Vercel routing/build model is changed.
+
+## Known Gaps
+
+- No real provider keys are configured yet in Vercel.
+- No production airport map catalog has been supplied yet.
+- No native iOS/Android shell exists yet for Wi-Fi auto-join, BLE, Wi-Fi RTT, or inertial sensor fusion.
+- The current visual map renderer is SVG-based and optimized for normalized routing bundles, not full indoor tile rendering.
+- For true airport-grade navigation, the next major step is a real map ingestion pipeline from airport-owned IMDF/IndoorGML/GIS/BIM exports or a commercial indoor map provider.
+
+## Suggested Next Steps
+
+1. Add FlightAware AeroAPI key in Vercel.
+2. Choose a production indoor map source:
+   - airport-owned IMDF exports;
+   - OGC IndoorGML-derived graph bundles;
+   - Mappedin, MapsIndoors, or another contracted indoor map provider;
+   - internal airline/airport GIS service.
+3. Publish an `AIRPORT_MAP_CATALOG_URL` with at least one real airport bundle.
+4. Set `GATE_GUIDE_MAP_MODE=production`.
+5. Redeploy and verify `/api/providers`, `/api/airport-map/catalog`, and `/api/airport-map?airport={IATA}`.
+6. Add real-time update polling or push for gate changes after the live flight provider is configured.
+7. Add mobile shell/native bridge for Wi-Fi join and indoor positioning.
+
+## GitHub Upload Status
+
+This handoff was prepared before GitHub upload. At the moment of writing, the local machine's GitHub CLI account `RoUchiha` existed but `gh auth status` reported an invalid token. Re-auth with:
+
+```powershell
+gh auth refresh -h github.com
+```
+
+Then create and push the repo:
+
+```powershell
+git init -b main
+git add -A
+git commit -m "Initial Gate Guide implementation"
+gh repo create RoUchiha/gate-guide --private --source=. --remote=origin --push
+```
+
+If the repo already exists:
+
+```powershell
+git remote add origin https://github.com/RoUchiha/gate-guide.git
+git push -u origin main
+```
