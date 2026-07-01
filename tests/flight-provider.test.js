@@ -19,7 +19,22 @@ test("simulates gate change without mutating original itinerary", async () => {
   assert.equal(changed.legs[0].status, "gate changed");
 });
 
-test("summarizes layover risk", () => {
+test("summarizes layover risk from first-leg arrival time", () => {
+  const itinerary = {
+    legs: [
+      {
+        estimatedDeparture: "2026-07-01T13:00:00-07:00",
+        estimatedArrival: "2026-07-01T15:40:00-07:00"
+      },
+      { estimatedDeparture: "2026-07-01T16:05:00-07:00" }
+    ]
+  };
+  const risk = summarizeConnectionRisk(itinerary, 45);
+  assert.equal(risk.atRisk, true);
+  assert.equal(risk.bufferMinutes, 25);
+});
+
+test("layover risk falls back to departure times when arrival is unknown", () => {
   const itinerary = {
     legs: [
       { estimatedDeparture: "2026-07-01T15:40:00-07:00" },
@@ -27,6 +42,12 @@ test("summarizes layover risk", () => {
     ]
   };
   const risk = summarizeConnectionRisk(itinerary, 45);
-  assert.equal(risk.atRisk, true);
   assert.equal(risk.bufferMinutes, 25);
+});
+
+test("layover risk returns null for unparseable times", () => {
+  const itinerary = {
+    legs: [{ estimatedArrival: "not-a-date" }, { estimatedDeparture: "also-not-a-date" }]
+  };
+  assert.equal(summarizeConnectionRisk(itinerary), null);
 });

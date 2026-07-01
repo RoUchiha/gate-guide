@@ -34,6 +34,8 @@ const elements = {
   map: document.querySelector("#map"),
   providerHealth: document.querySelector("#provider-health"),
   accessibleMode: document.querySelector("#accessible-mode"),
+  trackButton: document.querySelector("#track-flight"),
+  mapTitle: document.querySelector("#map-title"),
   locateSecurity: document.querySelector("#locate-security"),
   locateArrival: document.querySelector("#locate-arrival"),
   useGps: document.querySelector("#use-gps")
@@ -46,12 +48,19 @@ bootstrap();
 elements.form.addEventListener("submit", async (event) => {
   event.preventDefault();
   addAlert("Resolving flight with configured provider.");
-  const itinerary = await state.provider.resolveFlight({
-    airline: elements.airline.value.trim().toUpperCase(),
-    flightNumber: elements.flightNumber.value.trim(),
-    date: elements.flightDate.value
-  });
-  await applyItinerary(itinerary);
+  setTracking(true);
+  try {
+    const itinerary = await state.provider.resolveFlight({
+      airline: elements.airline.value.trim().toUpperCase(),
+      flightNumber: elements.flightNumber.value.trim(),
+      date: elements.flightDate.value
+    });
+    await applyItinerary(itinerary);
+  } catch (error) {
+    addAlert(`Could not resolve that flight: ${error.message}`);
+  } finally {
+    setTracking(false);
+  }
 
   window.setTimeout(() => {
     if (!state.itinerary || state.itinerary.providerMode === "live") return;
@@ -59,6 +68,12 @@ elements.form.addEventListener("submit", async (event) => {
     addAlert("Demo gate changed to A21. Route recalculated.");
   }, 8000);
 });
+
+function setTracking(active) {
+  if (!elements.trackButton) return;
+  elements.trackButton.disabled = active;
+  elements.trackButton.textContent = active ? "Tracking…" : "Track flight";
+}
 
 elements.accessibleMode.addEventListener("change", () => {
   state.accessible = elements.accessibleMode.checked;
@@ -275,11 +290,31 @@ function renderAlerts() {
   elements.alerts.innerHTML = state.alerts.map((alert) => `<li>${escapeHtml(alert)}</li>`).join("");
 }
 
+function mapBounds(map, padding = 70) {
+  const xs = map.nodes.map((node) => node.x);
+  const ys = map.nodes.map((node) => node.y);
+  const minX = Math.min(...xs) - padding;
+  const minY = Math.min(...ys) - padding;
+  return {
+    minX,
+    minY,
+    width: Math.max(...xs) + padding - minX,
+    height: Math.max(...ys) + padding - minY
+  };
+}
+
 function renderMap(route) {
+  if (elements.mapTitle) {
+    elements.mapTitle.textContent = state.productionMapBlocked
+      ? "Airport map"
+      : state.map.name || state.map.airportCode || "Airport map";
+  }
+
   if (state.productionMapBlocked) {
     elements.routeTitle.textContent = "Production map unavailable";
     elements.routeMeta.textContent = state.mapError || "Map provider is not configured.";
     elements.routeSteps.innerHTML = "<li>Configure a production airport map catalog or bundle host before routing.</li>";
+    elements.map.setAttribute("viewBox", "0 0 920 560");
     elements.map.innerHTML = `
       <rect class="terminal-wall" x="34" y="92" width="852" height="384" rx="8"></rect>
       <text class="place-label" x="100" y="250">Production airport map required</text>
@@ -289,20 +324,28 @@ function renderMap(route) {
   }
 
   const map = state.map;
+  if (!map.nodes.some((node) => node.id === state.fromNodeId)) {
+    state.fromNodeId = defaultStartNode(map);
+  }
+  if (!map.nodes.some((node) => node.id === state.destinationNodeId)) {
+    state.destinationNodeId = map.places.find((place) => place.kind === "gate")?.nodeId || map.nodes[0].id;
+  }
+
   const routeNodes = route.path.map((nodeId) => getNode(map, nodeId));
   const activeGate = getNode(map, state.destinationNodeId).label;
   elements.routeTitle.textContent = route.ok ? `Route to gate ${activeGate}` : "No route available";
   elements.routeMeta.innerHTML = route.ok
     ? `${Math.round(route.meters)} m<br>${route.etaMinutes} min<br>${route.confidence} confidence`
-    : route.reason;
+    : escapeHtml(route.reason);
 
   elements.routeSteps.innerHTML = route.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("");
 
+  const bounds = mapBounds(map);
+  elements.map.setAttribute("viewBox", `${bounds.minX} ${bounds.minY} ${bounds.width} ${bounds.height}`);
+
   const routePath = routeNodes.map((node) => `${node.x},${node.y}`).join(" ");
   elements.map.innerHTML = `
-    <rect class="terminal-wall" x="34" y="92" width="852" height="384" rx="8"></rect>
-    <rect class="terminal-zone" x="62" y="124" width="230" height="310" rx="6"></rect>
-    <rect class="terminal-zone" x="314" y="124" width="540" height="310" rx="6"></rect>
+    <rect class="terminal-wall" x="${bounds.minX + 16}" y="${bounds.minY + 16}" width="${bounds.width - 32}" height="${bounds.height - 32}" rx="8"></rect>
     ${map.edges.map((edge) => renderEdge(map, edge)).join("")}
     ${route.ok ? `<polyline class="route-line" points="${routePath}"></polyline>` : ""}
     ${map.places.map((place) => renderPlace(map, place)).join("")}

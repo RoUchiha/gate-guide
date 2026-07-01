@@ -22,6 +22,8 @@ export class MockFlightProvider {
           status: "boarding soon",
           scheduledDeparture: `${date}T15:25:00-05:00`,
           estimatedDeparture: `${date}T15:40:00-05:00`,
+          scheduledArrival: `${date}T16:35:00-07:00`,
+          estimatedArrival: `${date}T16:50:00-07:00`,
           fetchedAt,
           source: "MockFlightProvider"
         },
@@ -37,6 +39,8 @@ export class MockFlightProvider {
           status: "on time",
           scheduledDeparture: `${date}T18:15:00-07:00`,
           estimatedDeparture: `${date}T18:15:00-07:00`,
+          scheduledArrival: `${date}T21:05:00-07:00`,
+          estimatedArrival: `${date}T21:05:00-07:00`,
           fetchedAt,
           source: "MockFlightProvider"
         }
@@ -89,9 +93,17 @@ export class ApiFlightProvider {
 export function summarizeConnectionRisk(itinerary, minimumMinutes = 45) {
   if (!itinerary?.legs || itinerary.legs.length < 2) return null;
   const [arrivalLeg, departureLeg] = itinerary.legs;
-  const arrival = new Date(arrivalLeg.estimatedDeparture || arrivalLeg.scheduledDeparture);
+  // The layover buffer runs from when the first leg lands to when the next
+  // leg departs; fall back to departure times only if no arrival is known.
+  const arrival = new Date(
+    arrivalLeg.estimatedArrival
+    || arrivalLeg.scheduledArrival
+    || arrivalLeg.estimatedDeparture
+    || arrivalLeg.scheduledDeparture
+  );
   const departure = new Date(departureLeg.estimatedDeparture || departureLeg.scheduledDeparture);
   const bufferMinutes = Math.round((departure - arrival) / 60000);
+  if (!Number.isFinite(bufferMinutes)) return null;
   return {
     bufferMinutes,
     minimumMinutes,

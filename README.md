@@ -2,6 +2,13 @@
 
 Spec-driven airport wayfinding PWA for guiding travelers from check-in, security, lounges, and layover arrivals to the correct gate.
 
+**Live app:** https://gate-guide-ashen.vercel.app
+
+- Track a flight (live via FlightAware AeroAPI, or the built-in demo) and route to its gate on a scaled terminal map.
+- Weighted, closure-aware routing with an accessible-route mode that avoids stairs-only edges.
+- Installable PWA: offline app shell, versioned service-worker caches, dark mode, real icons.
+- Production map seam: strict `production` map mode refuses demo fallback and loads airport-approved bundles from a signed catalog or bundle host.
+
 This repository is intentionally built around production constraints:
 
 - accurate scaled indoor maps require licensed airport/venue map feeds or airport-owned IndoorGML/IMDF data;
@@ -9,16 +16,34 @@ This repository is intentionally built around production constraints:
 - browser apps can read GPS with permission, but Wi-Fi SSID scanning and auto-join need native iOS/Android bridges;
 - indoor navigation needs sensor fusion: GPS, Wi-Fi RTT/fingerprints, BLE beacons, inertial dead reckoning, and map matching.
 
-The runnable app ships with a calibrated demo airport and mock provider adapters so the product, architecture, routing, and test contracts are visible end to end.
+The runnable app ships with a calibrated demo airport (DFW Terminal A) and mock provider adapters so the product, architecture, routing, and test contracts are visible end to end.
 
 ## Run
 
 ```powershell
-npm.cmd test
-npm.cmd start
+npm run verify   # spec check + tests + build
+npm start        # http://127.0.0.1:4173
 ```
 
-Then open `http://127.0.0.1:4173`.
+No dependencies to install — the app is plain ES modules on Node 20+.
+
+Useful scripts:
+
+| Script | What it does |
+| --- | --- |
+| `npm start` | Local server (serves the same handler Vercel runs) |
+| `npm test` | Node test-runner suite (router, providers, server, positioning, Wi-Fi) |
+| `npm run check` | Spec-file presence and content check |
+| `npm run build` | Copies `public/` into `dist/` |
+| `npm run icons` | Regenerates PWA icons from `scripts/generate-icons.js` |
+| `npm run verify` | check + test + build |
+
+## Architecture
+
+- `index.js` — Vercel serverless entrypoint: serves the PWA from `public/` and the API (`/api/providers`, `/api/flight`, `/api/airport-map`, `/api/airport-map/catalog`) with security headers and a CSP.
+- `server/providers.js` — FlightAware AeroAPI adapter, production map catalog/bundle loader, map validation.
+- `public/app-assets/` — browser modules (UI state, Dijkstra routing, positioning confidence, Wi-Fi assist). They live here, not `public/src/`, because Vercel treats `public/src/*.js` as serverless entrypoints.
+- `docs/specs/` — the specs the implementation is checked against.
 
 ## Specs
 
@@ -30,18 +55,37 @@ Then open `http://127.0.0.1:4173`.
 
 ## Live Provider Setup
 
-Gate Guide now has server-side provider endpoints:
+All configuration is via environment variables (see `.env.example`):
 
-- `/api/providers`
-- `/api/flight`
-- `/api/airport-map`
+| Variable | Purpose |
+| --- | --- |
+| `FLIGHTAWARE_AEROAPI_KEY` | Live flight status and gates from FlightAware AeroAPI |
+| `AIRPORT_MAP_CATALOG_URL` | Catalog JSON listing airport-approved map bundles |
+| `AIRPORT_MAP_BUNDLE_BASE_URL` | Direct bundle host (`{base}/{IATA}.json`) — alternative to the catalog |
+| `AIRPORT_MAP_BUNDLE_TOKEN` | Optional bearer token for the map host |
+| `GATE_GUIDE_MAP_MODE` | Set to `production` to refuse demo-map fallback (returns 503 instead) |
 
-Set `FLIGHTAWARE_AEROAPI_KEY` for live flight/gate data, `AIRPORT_MAP_CATALOG_URL` or `AIRPORT_MAP_BUNDLE_BASE_URL` for airport-approved map bundles, and `GATE_GUIDE_MAP_MODE=production` when demo fallback must be disabled. See [Provider Integrations](docs/specs/provider-integrations.md).
+Without any keys the app runs fully in demo mode and says so in the UI. See [Provider Integrations](docs/specs/provider-integrations.md) for contracts and payload shapes.
+
+## Deploy
+
+The Vercel project (`rouchihas-projects/gate-guide`) uses `index.js` as the root serverless entrypoint.
+
+```powershell
+npx vercel deploy --prod --yes
+```
+
+Verify after deploy:
+
+```powershell
+Invoke-RestMethod https://gate-guide-ashen.vercel.app/api/providers
+Invoke-RestMethod "https://gate-guide-ashen.vercel.app/api/airport-map?airport=DFW"
+```
 
 ## Production Integration Checklist
 
-- Replace `MockFlightProvider` with contracted live flight feeds.
-- Replace the demo `AirportMap` with airport-validated IndoorGML/IMDF or provider map imports.
-- Connect native iOS/Android Wi-Fi join helpers to `WifiBridge`.
+- Add a `FLIGHTAWARE_AEROAPI_KEY` in Vercel for live flight/gate data.
+- Publish an airport-approved map catalog and set `AIRPORT_MAP_CATALOG_URL` + `GATE_GUIDE_MAP_MODE=production`.
+- Connect native iOS/Android Wi-Fi join helpers to the `NativeAirportBridge` seam.
 - Run calibration surveys per terminal and publish per-floor positioning confidence models.
 - Add SSO, audit logs, observability, privacy retention rules, and on-call runbooks before enterprise rollout.
