@@ -303,9 +303,10 @@ function renderFlight() {
 
   elements.flightCard.innerHTML = [
     row("Flight", `${leg.airline} ${leg.flightNumber}`),
-    row("Route", `${leg.origin} to ${leg.destination}`),
-    row("Terminal / gate", `${leg.terminal} / ${leg.gate}`),
+    row("Route", `${leg.origin || "unknown"} to ${leg.destination || "unknown"}`),
+    row("Terminal / gate", `${leg.terminal || "n/a"} / ${leg.gate || "not published"}`),
     row("Status", leg.status),
+    leg.position ? row("Live position", `${leg.position.lat.toFixed(2)}, ${leg.position.lon.toFixed(2)}`) : "",
     row("Provider mode", state.itinerary.providerMode || "demo"),
     row("Data source", `${leg.source}, ${new Date(leg.fetchedAt).toLocaleTimeString()}`)
   ].join("");

@@ -5,16 +5,37 @@ import { demoAirportMap } from "../public/app-assets/sample-data.js";
 import { MockFlightProvider } from "../public/app-assets/flight-provider.js";
 
 const flightAwareBaseUrl = "https://aeroapi.flightaware.com/aeroapi";
+const openSkyBaseUrl = "https://opensky-network.org/api";
+const openSkyTokenUrl = "https://auth.opensky-network.org/auth/realms/opensky-network/protocol/openid-connect/token";
 const bundledMapsDir = fileURLToPath(new URL("../public/maps/", import.meta.url));
+
+// IATA airline designator -> ICAO callsign prefix used in ADS-B transponders.
+const airlineIcaoPrefixes = {
+  AA: "AAL", DL: "DAL", UA: "UAL", WN: "SWA", AS: "ASA", B6: "JBU", NK: "NKS",
+  F9: "FFT", AC: "ACA", WS: "WJA", BA: "BAW", LH: "DLH", AF: "AFR", KL: "KLM",
+  LX: "SWR", OS: "AUA", SN: "BEL", AY: "FIN", SK: "SAS", IB: "IBE", VY: "VLG",
+  EK: "UAE", QR: "QTR", EY: "ETD", TK: "THY", SQ: "SIA", CX: "CPA", QF: "QFA",
+  NH: "ANA", JL: "JAL", KE: "KAL", OZ: "AAR", U2: "EZY", FR: "RYR", EW: "EWG"
+};
+
+// ICAO airport codes (as reported by OpenSky) -> IATA codes the app uses.
+const airportIcaoToIata = {
+  EHAM: "AMS", LFPG: "CDG", EDDF: "FRA", EFHK: "HEL", EGLL: "LHR", EDDM: "MUC",
+  LSZH: "ZRH", KDFW: "DFW", KATL: "ATL", KORD: "ORD", KDEN: "DEN", KSFO: "SFO",
+  KSEA: "SEA", KLAX: "LAX", KJFK: "JFK", KMIA: "MIA", KBOS: "BOS", KPHX: "PHX",
+  KIAH: "IAH", KEWR: "EWR", KCLT: "CLT", KMSP: "MSP", KLAS: "LAS", KPHL: "PHL",
+  KDTW: "DTW", KSLC: "SLC", KIAD: "IAD", KMCO: "MCO", KSAN: "SAN", KAUS: "AUS",
+  EGKK: "LGW", EDDL: "DUS", EDDB: "BER", EDDH: "HAM", LFPO: "ORY", LEMD: "MAD",
+  LEBL: "BCN", LIRF: "FCO", LIMC: "MXP", LOWW: "VIE", LSGG: "GVA", EKCH: "CPH",
+  ENGM: "OSL", ESSA: "ARN", EIDW: "DUB", LPPT: "LIS", LGAV: "ATH", LTFM: "IST",
+  OMDB: "DXB", OTHH: "DOH", VHHH: "HKG", WSSS: "SIN", RJTT: "HND", RJAA: "NRT",
+  RKSI: "ICN", YSSY: "SYD", CYYZ: "YYZ", CYVR: "YVR", CYUL: "YUL"
+};
 
 export function providerStatus(env = process.env) {
   const productionMapsRequired = requiresProductionMaps(env);
   return {
-    flight: env.FLIGHTAWARE_AEROAPI_KEY
-      ? "flightaware-aeroapi"
-      : requiresLiveFlights(env)
-        ? "missing-live-flight-provider"
-        : "demo",
+    flight: env.FLIGHTAWARE_AEROAPI_KEY ? "flightaware-aeroapi" : "opensky-network",
     airportMap: mapProviderName(env),
     productionMapsRequired,
     liveFlightsRequired: requiresLiveFlights(env),
@@ -30,19 +51,20 @@ export async function resolveFlightFromProviders(query, options = {}) {
     return resolveFlightAware(query, { env, fetchImpl });
   }
 
-  if (requiresLiveFlights(env)) {
-    throw httpError(503, "Live flight data is required but no flight provider key is configured.", {
-      productionRequired: true
-    });
+  try {
+    return await resolveOpenSky(query, { env, fetchImpl });
+  } catch (error) {
+    if (error.statusCode === 400 || error.statusCode === 404 || requiresLiveFlights(env)) {
+      throw error;
+    }
+    const provider = new MockFlightProvider();
+    const itinerary = await provider.resolveFlight(query);
+    return {
+      ...itinerary,
+      providerMode: "demo",
+      warnings: [`Live OpenSky lookup failed (${error.message}). Showing demo data.`]
+    };
   }
-
-  const provider = new MockFlightProvider();
-  const itinerary = await provider.resolveFlight(query);
-  return {
-    ...itinerary,
-    providerMode: "demo",
-    warnings: ["Set FLIGHTAWARE_AEROAPI_KEY to use live flight status and gate data."]
-  };
 }
 
 export async function resolveAirportMapFromProviders(airportCode, options = {}) {
@@ -265,6 +287,117 @@ function normalizeMapPayload(payload, entry) {
     bundleUrl: entry.bundleUrl
   };
   return { map, provenance };
+}
+
+let openSkyToken = null;
+
+async function openSkyHeaders(env, fetchImpl) {
+  if (!env.OPENSKY_CLIENT_ID || !env.OPENSKY_CLIENT_SECRET) return {};
+  if (openSkyToken && openSkyToken.expiresAt > Date.now() + 30000) {
+    return { authorization: `Bearer ${openSkyToken.value}` };
+  }
+  const response = await fetchImpl(openSkyTokenUrl, {
+    method: "POST",
+    headers: { "content-type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "client_credentials",
+      client_id: env.OPENSKY_CLIENT_ID,
+      client_secret: env.OPENSKY_CLIENT_SECRET
+    })
+  });
+  if (!response.ok) return {};
+  const payload = await response.json();
+  openSkyToken = { value: payload.access_token, expiresAt: Date.now() + (payload.expires_in || 1800) * 1000 };
+  return { authorization: `Bearer ${openSkyToken.value}` };
+}
+
+// OpenSky Network: real live ADS-B data, no key required. It tracks aircraft,
+// not airports — live position and status are real, but gate and terminal
+// assignments do not exist in this data source and are reported as unknown.
+async function resolveOpenSky({ airline, flightNumber, date }, { env, fetchImpl }) {
+  const iata = String(airline || "").trim().toUpperCase();
+  const number = String(flightNumber || "").trim();
+  if (!iata || !number) throw httpError(400, "Airline and flight number are required.");
+
+  const callsign = `${airlineIcaoPrefixes[iata] || iata}${number}`;
+  const headers = await openSkyHeaders(env, fetchImpl);
+
+  const statesResponse = await fetchImpl(`${openSkyBaseUrl}/states/all`, { headers });
+  if (!statesResponse.ok) {
+    throw httpError(statesResponse.status === 429 ? 429 : 502, `OpenSky states request failed (HTTP ${statesResponse.status}).`);
+  }
+  const statesPayload = await statesResponse.json();
+  const state = (statesPayload.states || []).find(
+    (candidate) => String(candidate[1] || "").trim().toUpperCase() === callsign
+  );
+
+  if (!state) {
+    throw httpError(404, `${iata} ${number} (callsign ${callsign}) is not currently being tracked by OpenSky. ADS-B only covers airborne or recently active aircraft.`);
+  }
+
+  const [icao24, , , , lastContact, lon, lat, baroAltitude, onGround, velocity] = state;
+
+  // Enrich with the aircraft's current flight record (origin/destination)
+  // when the endpoint is available for this access level.
+  let flightRecord = null;
+  try {
+    const end = Math.floor(Date.now() / 1000);
+    const begin = end - 2 * 24 * 3600;
+    const flightsResponse = await fetchImpl(
+      `${openSkyBaseUrl}/flights/aircraft?icao24=${icao24}&begin=${begin}&end=${end}`,
+      { headers }
+    );
+    if (flightsResponse.ok) {
+      const flights = await flightsResponse.json();
+      if (Array.isArray(flights) && flights.length) {
+        flightRecord = flights.sort((a, b) => (b.firstSeen || 0) - (a.firstSeen || 0))[0];
+      }
+    }
+  } catch {
+    // Position data alone is still a valid live result.
+  }
+
+  const fetchedAt = new Date().toISOString();
+  const origin = mapIcaoAirport(flightRecord?.estDepartureAirport);
+  const destination = mapIcaoAirport(flightRecord?.estArrivalAirport);
+  const status = onGround
+    ? "on ground (live ADS-B)"
+    : `en route (live ADS-B${baroAltitude ? `, ${Math.round(baroAltitude)} m` : ""}${velocity ? `, ${Math.round(velocity * 3.6)} km/h` : ""})`;
+
+  const leg = {
+    id: `${callsign}-${icao24}`,
+    airline: iata,
+    flightNumber: number,
+    date: date || fetchedAt.slice(0, 10),
+    origin,
+    destination,
+    terminal: "",
+    gate: "",
+    status,
+    scheduledDeparture: flightRecord?.firstSeen ? new Date(flightRecord.firstSeen * 1000).toISOString() : "",
+    estimatedDeparture: flightRecord?.firstSeen ? new Date(flightRecord.firstSeen * 1000).toISOString() : "",
+    scheduledArrival: flightRecord?.lastSeen ? new Date(flightRecord.lastSeen * 1000).toISOString() : "",
+    estimatedArrival: flightRecord?.lastSeen ? new Date(flightRecord.lastSeen * 1000).toISOString() : "",
+    position: lat !== null && lon !== null
+      ? { lat, lon, lastContact: lastContact ? new Date(lastContact * 1000).toISOString() : null }
+      : null,
+    fetchedAt,
+    source: "OpenSky Network"
+  };
+
+  return {
+    itineraryId: `${callsign}-${date || "live"}`,
+    source: "OpenSky Network",
+    providerMode: "live",
+    fetchedAt,
+    warnings: ["OpenSky provides live positions but no gate assignments; gate data needs an airline/airport feed such as FlightAware AeroAPI."],
+    legs: [leg]
+  };
+}
+
+function mapIcaoAirport(icaoCode) {
+  if (!icaoCode) return "";
+  return airportIcaoToIata[icaoCode] || icaoCode;
 }
 
 async function resolveFlightAware({ airline, flightNumber, date }, { env, fetchImpl }) {

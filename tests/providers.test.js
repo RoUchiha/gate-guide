@@ -33,15 +33,71 @@ test("providerStatus reports production map catalog and required mode", () => {
   assert.equal(status.productionMapsRequired, true);
 });
 
-test("flight provider falls back to demo when no live key is configured", async () => {
+test("flight provider falls back to demo when OpenSky is unreachable", async () => {
   const itinerary = await resolveFlightFromProviders(
     { airline: "AA", flightNumber: "1442", date: "2026-07-01" },
-    { env: {} }
+    { env: {}, fetchImpl: async () => ({ ok: false, status: 500, json: async () => ({}) }) }
   );
 
   assert.equal(itinerary.providerMode, "demo");
   assert.equal(itinerary.legs[0].gate, "A18");
-  assert.match(itinerary.warnings[0], /FLIGHTAWARE_AEROAPI_KEY/);
+  assert.match(itinerary.warnings[0], /OpenSky/);
+});
+
+test("OpenSky adapter resolves live aircraft by callsign", async () => {
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  const itinerary = await resolveFlightFromProviders(
+    { airline: "KL", flightNumber: "605", date: "2026-07-02" },
+    {
+      env: {},
+      fetchImpl: async (url) => {
+        if (String(url).includes("/states/all")) {
+          return {
+            ok: true,
+            json: async () => ({
+              states: [
+                ["48044e", "KLM605  ", "Netherlands", nowSeconds, nowSeconds, 4.76, 52.31, 10058, false, 245]
+              ]
+            })
+          };
+        }
+        if (String(url).includes("/flights/aircraft")) {
+          return {
+            ok: true,
+            json: async () => ([
+              { icao24: "48044e", firstSeen: nowSeconds - 7200, lastSeen: nowSeconds, estDepartureAirport: "EHAM", estArrivalAirport: "KSFO" }
+            ])
+          };
+        }
+        throw new Error(`unexpected url ${url}`);
+      }
+    }
+  );
+
+  assert.equal(itinerary.providerMode, "live");
+  assert.equal(itinerary.source, "OpenSky Network");
+  assert.equal(itinerary.legs[0].origin, "AMS");
+  assert.equal(itinerary.legs[0].destination, "SFO");
+  assert.equal(itinerary.legs[0].gate, "");
+  assert.match(itinerary.legs[0].status, /en route/);
+  assert.ok(itinerary.legs[0].position.lat);
+});
+
+test("OpenSky adapter reports untracked flights as 404", async () => {
+  await assert.rejects(
+    () => resolveFlightFromProviders(
+      { airline: "AA", flightNumber: "9999", date: "2026-07-02" },
+      {
+        env: {},
+        fetchImpl: async () => ({ ok: true, json: async () => ({ states: [] }) })
+      }
+    ),
+    (error) => {
+      assert.equal(error.statusCode, 404);
+      assert.match(error.message, /not currently being tracked/);
+      return true;
+    }
+  );
 });
 
 test("FlightAware adapter normalizes live provider response", async () => {
@@ -185,22 +241,25 @@ test("bundled catalog lists bundles when no remote source is configured", async 
   assert.match(catalog.attribution, /OpenStreetMap/);
 });
 
-test("strict flight mode refuses demo fallback", async () => {
+test("strict flight mode refuses demo fallback when live lookup fails", async () => {
   await assert.rejects(
     () => resolveFlightFromProviders(
       { airline: "AA", flightNumber: "1442", date: "2026-07-02" },
-      { env: { GATE_GUIDE_FLIGHT_MODE: "production" } }
+      {
+        env: { GATE_GUIDE_FLIGHT_MODE: "production" },
+        fetchImpl: async () => ({ ok: false, status: 500, json: async () => ({}) })
+      }
     ),
     (error) => {
-      assert.equal(error.statusCode, 503);
-      assert.equal(error.productionRequired, true);
+      assert.equal(error.statusCode, 502);
+      assert.match(error.message, /OpenSky/);
       return true;
     }
   );
 });
 
-test("providerStatus reports strict flight mode without a key", () => {
+test("providerStatus reports OpenSky as the default live flight provider", () => {
   const status = providerStatus({ GATE_GUIDE_FLIGHT_MODE: "production" });
-  assert.equal(status.flight, "missing-live-flight-provider");
+  assert.equal(status.flight, "opensky-network");
   assert.equal(status.liveFlightsRequired, true);
 });
