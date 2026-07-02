@@ -30,6 +30,17 @@ export function routeBetween(map, fromNodeId, toNodeId, options = {}) {
   const now = options.now || new Date();
   const graph = new Map(map.nodes.map((node) => [node.id, []]));
 
+  if (!graph.has(fromNodeId) || !graph.has(toNodeId)) {
+    return {
+      ok: false,
+      reason: "Start or destination is not on the loaded map",
+      path: [],
+      meters: 0,
+      etaMinutes: null,
+      steps: []
+    };
+  }
+
   for (const edge of map.edges) {
     if (accessible && !edge.accessible) continue;
     if (isEdgeClosed(map, edge.from, edge.to, now)) continue;
@@ -112,15 +123,26 @@ export function nearestNode(map, reading) {
 }
 
 function buildSteps(map, path, meters, etaMinutes) {
-  const labels = path.map((nodeId) => getNode(map, nodeId).label || nodeId);
-  const destination = labels.at(-1);
-  const steps = [];
-  if (labels.length > 1) {
-    steps.push(`Start at ${labels[0]} and follow the signed concourse route.`);
-    for (let index = 1; index < labels.length - 1; index += 1) {
-      steps.push(`Continue toward ${labels[index]}.`);
-    }
-    steps.push(`Arrive at ${destination}. Estimated walk ${Math.round(meters)} m, about ${etaMinutes} min.`);
+  if (path.length < 2) return [];
+  const nodes = path.map((nodeId) => getNode(map, nodeId));
+  const startLabel = nodes[0].label || "your current position";
+  const destination = nodes.at(-1).label || "your gate";
+
+  // Only labeled waypoints make useful instructions; large real-world graphs
+  // have hundreds of anonymous junction vertices per route, so sample down to
+  // a handful of named landmarks along the way.
+  const waypoints = [];
+  for (const node of nodes.slice(1, -1)) {
+    const label = node.label;
+    if (!label || label === startLabel || label === destination) continue;
+    if (waypoints.at(-1) !== label) waypoints.push(label);
   }
-  return steps;
+  const stride = Math.max(1, Math.ceil(waypoints.length / 5));
+  const sampled = waypoints.filter((_, index) => index % stride === 0).slice(0, 5);
+
+  return [
+    `Start at ${startLabel} and follow the signed concourse route.`,
+    ...sampled.map((label) => `Continue toward ${label}.`),
+    `Arrive at ${destination}. Estimated walk ${Math.round(meters)} m, about ${etaMinutes} min.`
+  ];
 }

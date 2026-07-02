@@ -1,0 +1,63 @@
+{
+  "source": "openstreetmap-indoor",
+  "version": "2026-07-02",
+  "attribution": "Map data © OpenStreetMap contributors, ODbL",
+  "entries": [
+    {
+      "airportCode": "AMS",
+      "bundleUrl": "/maps/AMS.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-02-osm",
+      "updatedAt": "2026-07-02T22:08:32.894Z",
+      "source": "openstreetmap-indoor"
+    },
+    {
+      "airportCode": "CDG",
+      "bundleUrl": "/maps/CDG.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-02-osm",
+      "updatedAt": "2026-07-02T22:09:17.831Z",
+      "source": "openstreetmap-indoor"
+    },
+    {
+      "airportCode": "FRA",
+      "bundleUrl": "/maps/FRA.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-02-osm",
+      "updatedAt": "2026-07-02T22:08:27.399Z",
+      "source": "openstreetmap-indoor"
+    },
+    {
+      "airportCode": "HEL",
+      "bundleUrl": "/maps/HEL.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-02-osm",
+      "updatedAt": "2026-07-02T22:03:47.074Z",
+      "source": "openstreetmap-indoor"
+    },
+    {
+      "airportCode": "LHR",
+      "bundleUrl": "/maps/LHR.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-02-osm",
+      "updatedAt": "2026-07-02T22:08:39.621Z",
+      "source": "openstreetmap-indoor"
+    },
+    {
+      "airportCode": "MUC",
+      "bundleUrl": "/maps/MUC.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-02-osm",
+      "updatedAt": "2026-07-02T22:02:37.088Z",
+      "source": "openstreetmap-indoor"
+    },
+    {
+      "airportCode": "ZRH",
+      "bundleUrl": "/maps/ZRH.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-02-osm",
+      "updatedAt": "2026-07-02T22:03:00.461Z",
+      "source": "openstreetmap-indoor"
+    }
+  ]
+}

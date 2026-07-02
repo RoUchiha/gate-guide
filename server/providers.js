@@ -1,14 +1,23 @@
+import { existsSync } from "node:fs";
+import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import { demoAirportMap } from "../public/app-assets/sample-data.js";
 import { MockFlightProvider } from "../public/app-assets/flight-provider.js";
 
 const flightAwareBaseUrl = "https://aeroapi.flightaware.com/aeroapi";
+const bundledMapsDir = fileURLToPath(new URL("../public/maps/", import.meta.url));
 
 export function providerStatus(env = process.env) {
   const productionMapsRequired = requiresProductionMaps(env);
   return {
-    flight: env.FLIGHTAWARE_AEROAPI_KEY ? "flightaware-aeroapi" : "demo",
+    flight: env.FLIGHTAWARE_AEROAPI_KEY
+      ? "flightaware-aeroapi"
+      : requiresLiveFlights(env)
+        ? "missing-live-flight-provider"
+        : "demo",
     airportMap: mapProviderName(env),
     productionMapsRequired,
+    liveFlightsRequired: requiresLiveFlights(env),
     wifi: "client-native-bridge-or-manual"
   };
 }
@@ -19,6 +28,12 @@ export async function resolveFlightFromProviders(query, options = {}) {
 
   if (env.FLIGHTAWARE_AEROAPI_KEY) {
     return resolveFlightAware(query, { env, fetchImpl });
+  }
+
+  if (requiresLiveFlights(env)) {
+    throw httpError(503, "Live flight data is required but no flight provider key is configured.", {
+      productionRequired: true
+    });
   }
 
   const provider = new MockFlightProvider();
@@ -67,8 +82,23 @@ export async function resolveAirportMapFromProviders(airportCode, options = {}) 
     };
   }
 
+  const bundled = await loadBundledMap(normalizedAirport, options);
+  if (bundled) {
+    const { map, provenance } = normalizeMapPayload(bundled.payload, bundled.entry);
+    const diagnostics = validateAirportMap(map, { production: true });
+    return {
+      providerMode: "production",
+      source: bundled.payload.source || "bundled-map",
+      attribution: bundled.payload.attribution || map.attribution || null,
+      fetchedAt: new Date().toISOString(),
+      provenance,
+      diagnostics,
+      map
+    };
+  }
+
   if (productionMapsRequired) {
-    throw httpError(503, "Production maps are required but no production map provider is configured.", {
+    throw httpError(503, `No production map is available for ${normalizedAirport}.`, {
       productionRequired: true
     });
   }
@@ -118,6 +148,9 @@ export async function resolveAirportMapCatalog(options = {}) {
     };
   }
 
+  const bundledCatalog = await loadBundledCatalog(options);
+  if (bundledCatalog) return bundledCatalog;
+
   return {
     source: "demo",
     fetchedAt: new Date().toISOString(),
@@ -130,15 +163,59 @@ export async function resolveAirportMapCatalog(options = {}) {
   };
 }
 
+async function loadBundledMap(airportCode, options = {}) {
+  const dir = options.bundleDir || bundledMapsDir;
+  if (!/^[A-Z0-9]{3,4}$/.test(airportCode)) return null;
+  try {
+    const raw = await readFile(`${dir}${airportCode}.json`, "utf8");
+    const payload = JSON.parse(raw);
+    return {
+      payload,
+      entry: {
+        bundleUrl: `/maps/${airportCode}.json`,
+        format: payload.format || "gate-guide-airport-map",
+        source: payload.source || "bundled-map",
+        version: payload.version || null,
+        updatedAt: payload.updatedAt || null
+      }
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function loadBundledCatalog(options = {}) {
+  const dir = options.bundleDir || bundledMapsDir;
+  try {
+    const raw = await readFile(`${dir}index.json`, "utf8");
+    const catalog = JSON.parse(raw);
+    const normalized = normalizeCatalog(catalog, "/maps/index.json");
+    if (!normalized.entries.length) return null;
+    normalized.attribution = catalog.attribution || null;
+    return normalized;
+  } catch {
+    return null;
+  }
+}
+
+export function hasBundledMaps(options = {}) {
+  return existsSync(`${options.bundleDir || bundledMapsDir}index.json`);
+}
+
 function mapProviderName(env) {
   if (env.AIRPORT_MAP_CATALOG_URL) return "production-map-catalog";
   if (env.AIRPORT_MAP_BUNDLE_BASE_URL) return "production-map-bundles";
+  if (hasBundledMaps()) return "bundled-osm-maps";
   if (requiresProductionMaps(env)) return "missing-production-map-provider";
   return "demo";
 }
 
 function requiresProductionMaps(env) {
   return env.GATE_GUIDE_MAP_MODE === "production" || env.REQUIRE_PRODUCTION_MAPS === "true";
+}
+
+function requiresLiveFlights(env) {
+  return env.GATE_GUIDE_FLIGHT_MODE === "production" || env.REQUIRE_LIVE_FLIGHTS === "true";
 }
 
 function mapHeaders(env) {

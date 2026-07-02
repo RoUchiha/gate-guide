@@ -61,7 +61,7 @@ export default async function handler(req, res) {
       });
       return json(res, 200, itinerary);
     } catch (error) {
-      return json(res, error.statusCode || 500, { error: error.message });
+      return json(res, error.statusCode || 500, errorPayload(error));
     }
   }
 
@@ -121,6 +121,10 @@ function serveAsset(res, statusCode, filePath, body) {
     res.setHeader("Content-Security-Policy", contentSecurityPolicy);
   } else if (extension === ".png" || extension === ".svg" || extension === ".ico") {
     res.setHeader("Cache-Control", "public, max-age=86400");
+  } else if (extension === ".js" || extension === ".css") {
+    // App code must revalidate on every load — the service worker already
+    // provides offline support, and stale modules break deploys.
+    res.setHeader("Cache-Control", "no-cache");
   } else {
     res.setHeader("Cache-Control", "public, max-age=300");
   }

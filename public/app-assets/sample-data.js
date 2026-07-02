@@ -58,3 +58,21 @@ export const airportWifiProfiles = [
     ]
   }
 ];
+
+// Returns the curated Wi-Fi profile for an airport, or honest generic
+// guidance when we have no verified SSID for it — never a fabricated network.
+export function wifiProfileFor(airportCode) {
+  const known = airportWifiProfiles.find((profile) => profile.airportCode === airportCode);
+  if (known) return known;
+  return {
+    ssid: "Official airport Wi-Fi (check signage)",
+    airportCode,
+    security: "unknown",
+    trusted: false,
+    instructions: [
+      "Open Wi-Fi settings.",
+      "Choose the airport's official free network as posted on terminal signage.",
+      "Return here after connecting."
+    ]
+  };
+}

@@ -5,9 +5,10 @@ Spec-driven airport wayfinding PWA for guiding travelers from check-in, security
 **Live app:** https://gate-guide-ashen.vercel.app
 
 - Track a flight (live via FlightAware AeroAPI, or the built-in demo) and route to its gate on a scaled terminal map.
+- **Real airport maps**: bundled indoor map data for AMS, CDG, FRA, HEL, LHR, MUC, and ZRH, generated from OpenStreetMap indoor mapping by `scripts/build-osm-maps.js` (Map data © OpenStreetMap contributors, ODbL). Airports whose OSM coverage cannot actually route gate-to-security are rejected by the pipeline, never faked.
 - Weighted, closure-aware routing with an accessible-route mode that avoids stairs-only edges.
 - Installable PWA: offline app shell, versioned service-worker caches, dark mode, real icons.
-- Production map seam: strict `production` map mode refuses demo fallback and loads airport-approved bundles from a signed catalog or bundle host.
+- Strict production modes: `GATE_GUIDE_MAP_MODE=production` refuses demo-map fallback; `GATE_GUIDE_FLIGHT_MODE=production` refuses demo flight data — the app shows honest "not configured" errors instead of fabricated results.
 
 This repository is intentionally built around production constraints:
 
@@ -60,12 +61,13 @@ All configuration is via environment variables (see `.env.example`):
 | Variable | Purpose |
 | --- | --- |
 | `FLIGHTAWARE_AEROAPI_KEY` | Live flight status and gates from FlightAware AeroAPI |
-| `AIRPORT_MAP_CATALOG_URL` | Catalog JSON listing airport-approved map bundles |
+| `GATE_GUIDE_FLIGHT_MODE` | Set to `production` to refuse demo flight fallback (503 instead of fake data) |
+| `GATE_GUIDE_MAP_MODE` | Set to `production` to refuse demo-map fallback (returns 503 instead) |
+| `AIRPORT_MAP_CATALOG_URL` | Remote catalog JSON of airport-approved bundles (overrides bundled maps) |
 | `AIRPORT_MAP_BUNDLE_BASE_URL` | Direct bundle host (`{base}/{IATA}.json`) — alternative to the catalog |
 | `AIRPORT_MAP_BUNDLE_TOKEN` | Optional bearer token for the map host |
-| `GATE_GUIDE_MAP_MODE` | Set to `production` to refuse demo-map fallback (returns 503 instead) |
 
-Without any keys the app runs fully in demo mode and says so in the UI. See [Provider Integrations](docs/specs/provider-integrations.md) for contracts and payload shapes.
+Bundled OSM maps in `public/maps/` are always available as a production map source; regenerate or extend them with `node scripts/build-osm-maps.js [IATA ...]`. Without any flight key the app runs flight lookups in demo mode (unless strict mode) and says so in the UI. See [Provider Integrations](docs/specs/provider-integrations.md) for contracts and payload shapes.
 
 ## Deploy
 

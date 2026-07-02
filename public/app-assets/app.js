@@ -1,4 +1,4 @@
-import { demoAirportMap, airportWifiProfiles } from "./sample-data.js";
+import { demoAirportMap, wifiProfileFor } from "./sample-data.js";
 import { ApiFlightProvider, summarizeConnectionRisk } from "./flight-provider.js";
 import { confidenceForReading, browserGpsReading, manualReading, projectOutdoorGpsToTerminal } from "./positioning.js";
 import { connectToWifi, wifiCapability } from "./wifi-assistant.js";
@@ -36,6 +36,8 @@ const elements = {
   accessibleMode: document.querySelector("#accessible-mode"),
   trackButton: document.querySelector("#track-flight"),
   mapTitle: document.querySelector("#map-title"),
+  airportSelect: document.querySelector("#airport-select"),
+  mapAttribution: document.querySelector("#map-attribution"),
   locateSecurity: document.querySelector("#locate-security"),
   locateArrival: document.querySelector("#locate-arrival"),
   useGps: document.querySelector("#use-gps")
@@ -54,7 +56,7 @@ elements.form.addEventListener("submit", async (event) => {
       airline: elements.airline.value.trim().toUpperCase(),
       flightNumber: elements.flightNumber.value.trim(),
       date: elements.flightDate.value
-    });
+    }, { allowDemoFallback: state.providerStatus?.flight === "demo" });
     await applyItinerary(itinerary);
   } catch (error) {
     addAlert(`Could not resolve that flight: ${error.message}`);
@@ -80,8 +82,16 @@ elements.accessibleMode.addEventListener("change", () => {
   render();
 });
 
-elements.locateSecurity.addEventListener("click", () => setManualStart("security-a"));
-elements.locateArrival.addEventListener("click", () => setManualStart("arrival-a"));
+elements.locateSecurity.addEventListener("click", () => setManualStartByKind("security"));
+elements.locateArrival.addEventListener("click", () => setManualStartByKind("arrival"));
+
+elements.airportSelect?.addEventListener("change", async () => {
+  const airportCode = elements.airportSelect.value;
+  if (!airportCode || airportCode === state.map?.airportCode) return;
+  addAlert(`Loading ${airportCode} map...`);
+  await loadAirportMap(airportCode);
+  render();
+});
 
 elements.useGps.addEventListener("click", () => {
   if (!navigator.geolocation) {
@@ -103,22 +113,44 @@ elements.useGps.addEventListener("click", () => {
 });
 
 elements.joinWifi.addEventListener("click", async () => {
-  const result = await connectToWifi(airportWifiProfiles[0]);
+  const result = await connectToWifi(wifiProfileFor(state.map.airportCode));
   addAlert(result.message || (result.ok ? "Wi-Fi connection started." : "Wi-Fi connection needs manual setup."));
   renderWifi();
 });
 
-function setManualStart(nodeId) {
-  const reading = manualReading(getNode(state.map, nodeId));
-  state.fromNodeId = nodeId;
+function setManualStartByKind(kind) {
+  const node = state.map.nodes.find((candidate) => candidate.kind === kind);
+  if (!node) {
+    addAlert(`This ${state.map.airportCode} map has no mapped ${kind === "arrival" ? "entrance" : kind} point yet. Use GPS or stay on the default start.`);
+    return;
+  }
+  const reading = manualReading(node);
+  state.fromNodeId = node.id;
   state.positionConfidence = confidenceForReading(reading);
-  addAlert(`Start set to ${getNode(state.map, nodeId).label}.`);
+  addAlert(`Start set to ${node.label || node.id}.`);
   render();
 }
 
 async function bootstrap() {
-  await Promise.all([loadProviderStatus(), loadAirportMap("DFW")]);
+  await Promise.all([loadProviderStatus(), loadAirportCatalog()]);
+  await loadAirportMap(state.catalogCodes?.[0] || "DFW");
   render();
+}
+
+async function loadAirportCatalog() {
+  if (!elements.airportSelect) return;
+  try {
+    const response = await fetch("/api/airport-map/catalog");
+    const catalog = await response.json();
+    const codes = (catalog.entries || []).map((entry) => entry.airportCode).sort();
+    if (!codes.length) return;
+    elements.airportSelect.innerHTML = codes
+      .map((code) => `<option value="${escapeHtml(code)}">${escapeHtml(code)}</option>`)
+      .join("");
+    state.catalogCodes = codes;
+  } catch {
+    // The selector simply stays empty when the catalog is unavailable.
+  }
 }
 
 async function loadProviderStatus() {
@@ -147,6 +179,9 @@ async function loadAirportMap(airportCode) {
     state.mapError = null;
     state.productionMapBlocked = false;
     state.fromNodeId = defaultStartNode(state.map);
+    if (elements.airportSelect && state.catalogCodes?.includes(state.map.airportCode)) {
+      elements.airportSelect.value = state.map.airportCode;
+    }
     addAlert(payload.providerMode === "live"
       ? `Loaded live ${state.map.airportCode} map bundle (${state.map.version}).`
       : payload.providerMode === "production"
@@ -224,6 +259,16 @@ function currentRoute() {
     };
   }
 
+  // Node ids from a previously loaded airport must never leak into routing
+  // on the current map (e.g. after the live flight switches airports).
+  if (!state.map.nodes.some((node) => node.id === state.fromNodeId)) {
+    state.fromNodeId = defaultStartNode(state.map);
+  }
+  if (!state.map.nodes.some((node) => node.id === state.destinationNodeId)) {
+    state.destinationNodeId = state.map.places.find((place) => place.kind === "gate")?.nodeId
+      || state.map.nodes[0].id;
+  }
+
   return routeBetween(state.map, state.fromNodeId, state.destinationNodeId, {
     accessible: state.accessible,
     positionConfidence: state.positionConfidence
@@ -267,7 +312,7 @@ function renderFlight() {
 }
 
 function renderWifi() {
-  const profile = airportWifiProfiles[0];
+  const profile = wifiProfileFor(state.map.airportCode);
   const capability = wifiCapability();
   elements.wifiCard.innerHTML = [
     row("Airport SSID", profile.ssid),
@@ -343,34 +388,43 @@ function renderMap(route) {
   const bounds = mapBounds(map);
   elements.map.setAttribute("viewBox", `${bounds.minX} ${bounds.minY} ${bounds.width} ${bounds.height}`);
 
+  // Stroke widths, dot radii, and label sizes are expressed in viewBox units,
+  // so real-world bundles (thousands of meters wide) need everything scaled
+  // up relative to the 920-unit demo map the styles were designed around.
+  const s = Math.max(0.4, bounds.width / 920);
+
+  if (elements.mapAttribution) {
+    elements.mapAttribution.textContent = state.map.attribution || "";
+  }
+
   const routePath = routeNodes.map((node) => `${node.x},${node.y}`).join(" ");
   elements.map.innerHTML = `
-    <rect class="terminal-wall" x="${bounds.minX + 16}" y="${bounds.minY + 16}" width="${bounds.width - 32}" height="${bounds.height - 32}" rx="8"></rect>
-    ${map.edges.map((edge) => renderEdge(map, edge)).join("")}
-    ${route.ok ? `<polyline class="route-line" points="${routePath}"></polyline>` : ""}
-    ${map.places.map((place) => renderPlace(map, place)).join("")}
-    ${renderUserDot(map)}
+    <rect class="terminal-wall" x="${bounds.minX + 16 * s}" y="${bounds.minY + 16 * s}" width="${bounds.width - 32 * s}" height="${bounds.height - 32 * s}" rx="${8 * s}"></rect>
+    ${map.edges.map((edge) => renderEdge(map, edge, s)).join("")}
+    ${route.ok ? `<polyline class="route-line" points="${routePath}" style="stroke-width:${10 * s}px"></polyline>` : ""}
+    ${map.places.map((place) => renderPlace(map, place, s)).join("")}
+    ${renderUserDot(map, s)}
   `;
 }
 
-function renderEdge(map, edge) {
+function renderEdge(map, edge, s = 1) {
   const from = getNode(map, edge.from);
   const to = getNode(map, edge.to);
   const closed = isEdgeClosed(map, edge.from, edge.to) ? " closed" : "";
-  return `<line class="map-edge${closed}" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}"></line>`;
+  return `<line class="map-edge${closed}" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}" style="stroke-width:${8 * s}px"></line>`;
 }
 
-function renderPlace(map, place) {
+function renderPlace(map, place, s = 1) {
   const node = getNode(map, place.nodeId);
   return `
-    <circle class="place-dot" cx="${node.x}" cy="${node.y}" r="11"></circle>
-    <text class="place-label" x="${node.x + 15}" y="${node.y + 6}">${escapeHtml(place.label)}</text>
+    <circle class="place-dot" cx="${node.x}" cy="${node.y}" r="${11 * s}" style="stroke-width:${3 * s}px"></circle>
+    <text class="place-label" x="${node.x + 15 * s}" y="${node.y + 6 * s}" style="font-size:${18 * s}px">${escapeHtml(place.label)}</text>
   `;
 }
 
-function renderUserDot(map) {
+function renderUserDot(map, s = 1) {
   const node = getNode(map, state.fromNodeId);
-  return `<circle class="user-dot" cx="${node.x}" cy="${node.y}" r="13"></circle>`;
+  return `<circle class="user-dot" cx="${node.x}" cy="${node.y}" r="${13 * s}" style="stroke-width:${5 * s}px"></circle>`;
 }
 
 function row(label, value) {

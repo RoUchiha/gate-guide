@@ -1,8 +1,10 @@
 // Gate Guide service worker.
 // - Navigations and API calls: network-first, falling back to the last cached
 //   response so the app still opens (and can route on the last map) offline.
-// - Static assets: cache-first, refreshed whenever CACHE_VERSION changes.
-const CACHE_VERSION = "v2";
+// - Static assets: stale-while-revalidate — served from cache instantly, but
+//   refreshed in the background so updates land on the next load without
+//   waiting for a CACHE_VERSION bump.
+const CACHE_VERSION = "v3";
 const STATIC_CACHE = `gate-guide-static-${CACHE_VERSION}`;
 const RUNTIME_CACHE = `gate-guide-runtime-${CACHE_VERSION}`;
 
@@ -54,7 +56,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  event.respondWith(cacheFirst(request));
+  event.respondWith(staleWhileRevalidate(request));
 });
 
 async function networkFirst(request) {
@@ -74,13 +76,14 @@ async function networkFirst(request) {
   }
 }
 
-async function cacheFirst(request) {
-  const cached = await caches.match(request);
-  if (cached) return cached;
-  const response = await fetch(request);
-  if (response.ok) {
-    const cache = await caches.open(STATIC_CACHE);
-    cache.put(request, response.clone());
-  }
-  return response;
+async function staleWhileRevalidate(request) {
+  const cache = await caches.open(STATIC_CACHE);
+  const cached = await cache.match(request);
+  const refresh = fetch(request)
+    .then((response) => {
+      if (response.ok) cache.put(request, response.clone());
+      return response;
+    })
+    .catch(() => null);
+  return cached || (await refresh) || Response.error();
 }

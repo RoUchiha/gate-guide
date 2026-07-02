@@ -1,0 +1,30 @@
+{
+  "format": "gate-guide-airport-map",
+  "source": "openstreetmap-indoor",
+  "version": "2026-07-02-osm",
+  "updatedAt": "2026-07-02T00:00:00Z",
+  "attribution": "Map data © OpenStreetMap contributors, ODbL",
+  "map": {
+    "airportCode": "TST",
+    "name": "TST (fixture)",
+    "version": "2026-07-02-osm",
+    "source": "openstreetmap-indoor",
+    "attribution": "Map data © OpenStreetMap contributors, ODbL",
+    "scale": { "unit": "meter", "pixelsPerMeter": 1 },
+    "floors": [{ "id": "L0", "label": "Level 0" }],
+    "nodes": [
+      { "id": "n1", "floorId": "L0", "x": 0, "y": 0, "kind": "security", "label": "Security" },
+      { "id": "n2", "floorId": "L0", "x": 100, "y": 0, "kind": "junction", "label": "" },
+      { "id": "n3", "floorId": "L0", "x": 200, "y": 0, "kind": "gate", "label": "T1" }
+    ],
+    "edges": [
+      { "from": "n1", "to": "n2", "meters": 100, "accessible": true },
+      { "from": "n2", "to": "n3", "meters": 100, "accessible": true }
+    ],
+    "places": [
+      { "id": "n1", "kind": "security", "label": "Security", "nodeId": "n1" },
+      { "id": "n3", "kind": "gate", "label": "T1", "nodeId": "n3" }
+    ],
+    "closures": []
+  }
+}

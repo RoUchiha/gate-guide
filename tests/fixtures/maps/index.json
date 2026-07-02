@@ -1,0 +1,15 @@
+{
+  "source": "openstreetmap-indoor",
+  "version": "2026-07-02",
+  "attribution": "Map data © OpenStreetMap contributors, ODbL",
+  "entries": [
+    {
+      "airportCode": "TST",
+      "bundleUrl": "/maps/TST.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-02-osm",
+      "updatedAt": "2026-07-02T00:00:00Z",
+      "source": "openstreetmap-indoor"
+    }
+  ]
+}

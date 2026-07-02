@@ -76,11 +76,15 @@
         <div class="map-toolbar">
           <div>
             <p class="eyebrow" id="map-title">Airport map</p>
-            <h2 id="route-title" aria-live="polite">Route to gate A18</h2>
+            <h2 id="route-title" aria-live="polite">Route to gate</h2>
           </div>
-          <div class="route-meta" id="route-meta"></div>
+          <div class="map-toolbar-side">
+            <select id="airport-select" aria-label="Choose airport"></select>
+            <div class="route-meta" id="route-meta"></div>
+          </div>
         </div>
         <svg id="map" class="terminal-map" viewBox="0 0 920 560" role="img" aria-label="Scaled terminal map with route"></svg>
+        <p class="map-attribution" id="map-attribution"></p>
         <ol id="route-steps" class="route-steps"></ol>
       </section>
     </main>

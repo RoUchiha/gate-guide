@@ -18,6 +18,7 @@ test("providerStatus reflects configured keys without exposing secrets", () => {
     flight: "flightaware-aeroapi",
     airportMap: "production-map-bundles",
     productionMapsRequired: false,
+    liveFlightsRequired: false,
     wifi: "client-native-bridge-or-manual"
   });
 });
@@ -130,7 +131,8 @@ test("airport map catalog resolves explicit production entries", async () => {
 test("production map mode refuses demo fallback", async () => {
   await assert.rejects(
     () => resolveAirportMapFromProviders("DFW", {
-      env: { GATE_GUIDE_MAP_MODE: "production" }
+      env: { GATE_GUIDE_MAP_MODE: "production" },
+      bundleDir: "no-such-dir/"
     }),
     (error) => {
       assert.equal(error.statusCode, 503);
@@ -158,4 +160,47 @@ test("production map validation rejects unroutable bundles", async () => {
       return true;
     }
   );
+});
+
+test("bundled map bundles serve as production maps", async () => {
+  const result = await resolveAirportMapFromProviders("TST", {
+    env: { GATE_GUIDE_MAP_MODE: "production" },
+    bundleDir: "tests/fixtures/maps/"
+  });
+
+  assert.equal(result.providerMode, "production");
+  assert.equal(result.map.airportCode, "TST");
+  assert.match(result.attribution, /OpenStreetMap/);
+  assert.equal(result.diagnostics.valid, true);
+});
+
+test("bundled catalog lists bundles when no remote source is configured", async () => {
+  const catalog = await resolveAirportMapCatalog({
+    env: {},
+    bundleDir: "tests/fixtures/maps/"
+  });
+
+  assert.equal(catalog.source, "openstreetmap-indoor");
+  assert.equal(catalog.entries[0].airportCode, "TST");
+  assert.match(catalog.attribution, /OpenStreetMap/);
+});
+
+test("strict flight mode refuses demo fallback", async () => {
+  await assert.rejects(
+    () => resolveFlightFromProviders(
+      { airline: "AA", flightNumber: "1442", date: "2026-07-02" },
+      { env: { GATE_GUIDE_FLIGHT_MODE: "production" } }
+    ),
+    (error) => {
+      assert.equal(error.statusCode, 503);
+      assert.equal(error.productionRequired, true);
+      return true;
+    }
+  );
+});
+
+test("providerStatus reports strict flight mode without a key", () => {
+  const status = providerStatus({ GATE_GUIDE_FLIGHT_MODE: "production" });
+  assert.equal(status.flight, "missing-live-flight-provider");
+  assert.equal(status.liveFlightsRequired, true);
 });

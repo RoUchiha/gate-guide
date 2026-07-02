@@ -63,7 +63,7 @@ export class ApiFlightProvider {
     this.fallback = fallback;
   }
 
-  async resolveFlight({ airline, flightNumber, date }) {
+  async resolveFlight({ airline, flightNumber, date }, { allowDemoFallback = true } = {}) {
     const url = new URL("/api/flight", window.location.origin);
     url.searchParams.set("airline", airline);
     url.searchParams.set("flightNumber", flightNumber);
@@ -72,9 +72,16 @@ export class ApiFlightProvider {
     try {
       const response = await fetch(url);
       const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error || "Flight provider request failed.");
+      if (!response.ok) {
+        const error = new Error(payload.error || "Flight provider request failed.");
+        error.productionRequired = Boolean(payload.productionRequired);
+        throw error;
+      }
       return payload;
     } catch (error) {
+      // When the server runs in live-flights mode, fabricated demo data must
+      // never stand in for a real itinerary.
+      if (error.productionRequired || !allowDemoFallback) throw error;
       const itinerary = await this.fallback.resolveFlight({ airline, flightNumber, date });
       return {
         ...itinerary,
