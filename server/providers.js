@@ -322,7 +322,12 @@ async function resolveOpenSky({ airline, flightNumber, date }, { env, fetchImpl 
   const callsign = `${airlineIcaoPrefixes[iata] || iata}${number}`;
   const headers = await openSkyHeaders(env, fetchImpl);
 
-  const statesResponse = await fetchImpl(`${openSkyBaseUrl}/states/all`, { headers });
+  let statesResponse;
+  try {
+    statesResponse = await fetchImpl(`${openSkyBaseUrl}/states/all`, { headers });
+  } catch {
+    throw httpError(502, "OpenSky is unreachable from the server. Anonymous access is often refused for cloud egress IPs — set OPENSKY_CLIENT_ID and OPENSKY_CLIENT_SECRET (free at opensky-network.org).");
+  }
   if (!statesResponse.ok) {
     throw httpError(statesResponse.status === 429 ? 429 : 502, `OpenSky states request failed (HTTP ${statesResponse.status}).`);
   }
