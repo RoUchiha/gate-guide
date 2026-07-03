@@ -4,7 +4,7 @@ Spec-driven airport wayfinding PWA for guiding travelers from check-in, security
 
 **Live app:** https://gate-guide-ashen.vercel.app
 
-- Track a flight (live via FlightAware AeroAPI, or the built-in demo) and route to its gate on a scaled terminal map.
+- **Live flight tracking with no API key**: community ADS-B data (api.adsb.lol live aircraft state + api.adsbdb.com route records), with OpenSky Network as fallback and FlightAware AeroAPI as the optional gate-capable upgrade. ADS-B sources honestly report gates as "not published" — gate assignments only exist in airline/airport feeds.
 - **Real airport maps**: bundled indoor map data for AMS, CDG, FRA, HEL, LHR, MUC, and ZRH, generated from OpenStreetMap indoor mapping by `scripts/build-osm-maps.js` (Map data © OpenStreetMap contributors, ODbL). Airports whose OSM coverage cannot actually route gate-to-security are rejected by the pipeline, never faked.
 - Weighted, closure-aware routing with an accessible-route mode that avoids stairs-only edges.
 - Installable PWA: offline app shell, versioned service-worker caches, dark mode, real icons.
@@ -60,7 +60,8 @@ All configuration is via environment variables (see `.env.example`):
 
 | Variable | Purpose |
 | --- | --- |
-| `FLIGHTAWARE_AEROAPI_KEY` | Live flight status and gates from FlightAware AeroAPI |
+| `FLIGHTAWARE_AEROAPI_KEY` | Optional: gate-capable flight data from FlightAware AeroAPI (takes priority over ADS-B) |
+| `OPENSKY_CLIENT_ID` / `OPENSKY_CLIENT_SECRET` | Optional: registered OpenSky credentials for the fallback provider |
 | `GATE_GUIDE_FLIGHT_MODE` | Set to `production` to refuse demo flight fallback (503 instead of fake data) |
 | `GATE_GUIDE_MAP_MODE` | Set to `production` to refuse demo-map fallback (returns 503 instead) |
 | `AIRPORT_MAP_CATALOG_URL` | Remote catalog JSON of airport-approved bundles (overrides bundled maps) |
