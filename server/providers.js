@@ -277,6 +277,7 @@ function normalizeCatalog(catalog, sourceUrl) {
       version: entry.version || null,
       updatedAt: entry.updatedAt || null,
       source: entry.source || catalog.source || "production-map-catalog",
+      routing: entry.routing || "walkways",
       checksum: entry.checksum || null,
       accuracy: entry.accuracy || null
     })).filter((entry) => entry.airportCode && entry.bundleUrl)

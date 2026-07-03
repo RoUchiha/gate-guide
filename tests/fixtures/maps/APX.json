@@ -1,0 +1,30 @@
+{
+  "format": "gate-guide-airport-map",
+  "source": "openstreetmap-indoor",
+  "version": "2026-07-03-osm",
+  "updatedAt": "2026-07-03T00:00:00Z",
+  "attribution": "Map data © OpenStreetMap contributors, ODbL",
+  "routing": "approximate",
+  "map": {
+    "airportCode": "APX",
+    "name": "APX (OpenStreetMap gate positions)",
+    "version": "2026-07-03-osm",
+    "source": "openstreetmap-indoor",
+    "attribution": "Map data © OpenStreetMap contributors, ODbL",
+    "routing": "approximate",
+    "scale": { "unit": "meter", "pixelsPerMeter": 1 },
+    "floors": [{ "id": "L0", "label": "Level 0" }],
+    "nodes": [
+      { "id": "g1", "floorId": "L0", "x": 0, "y": 0, "kind": "gate", "label": "A1" },
+      { "id": "g2", "floorId": "L0", "x": 250, "y": 40, "kind": "gate", "label": "A2" },
+      { "id": "s1", "floorId": "L0", "x": 120, "y": 90, "kind": "security", "label": "Security" }
+    ],
+    "edges": [],
+    "places": [
+      { "id": "g1", "kind": "gate", "label": "A1", "nodeId": "g1" },
+      { "id": "g2", "kind": "gate", "label": "A2", "nodeId": "g2" },
+      { "id": "s1", "kind": "security", "label": "Security", "nodeId": "s1" }
+    ],
+    "closures": []
+  }
+}

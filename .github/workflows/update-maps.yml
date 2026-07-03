@@ -1,0 +1,47 @@
+name: Update airport map bundles
+
+on:
+  schedule:
+    # Weekly, Sunday 04:15 UTC — OSM indoor data changes slowly.
+    - cron: "15 4 * * 0"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-maps
+  cancel-in-progress: false
+
+jobs:
+  update-maps:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Rebuild airport map bundles from OpenStreetMap
+        run: node scripts/build-osm-maps.js
+
+      - name: Run tests
+        run: npm test
+
+      - name: Commit and push updated bundles
+        run: |
+          # Vercel only builds deployments whose git author is a project
+          # member, so automated commits must be authored as RoUchiha.
+          git config user.name "RoUchiha"
+          git config user.email "79603710+RoUchiha@users.noreply.github.com"
+          git add public/maps
+          if git diff --cached --quiet; then
+            echo "No map changes this week."
+          else
+            git commit -m "Scheduled airport map bundle update
+
+          Automated weekly rebuild from OpenStreetMap via scripts/build-osm-maps.js."
+            git push
+          fi

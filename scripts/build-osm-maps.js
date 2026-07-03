@@ -22,17 +22,47 @@ const OVERPASS_ENDPOINTS = [
   "https://overpass.kumi.systems/api/interpreter"
 ];
 
+// The world's major passenger airports. Airports whose OSM data supports
+// corridor routing ship as tier "walkways"; the rest ship real gate/security/
+// entrance positions as tier "approximate" (signage-based guidance).
 const CANDIDATE_AIRPORTS = [
-  "DFW", "ATL", "ORD", "DEN", "SFO", "SEA", "LAX", "JFK", "MIA", "BOS",
-  "PHX", "IAH", "EWR", "CLT", "MSP",
-  "FRA", "MUC", "AMS", "LHR", "CDG", "ZRH", "VIE", "HEL", "OSL", "ARN",
-  "SIN", "ICN", "HND", "YYZ", "DXB"
+  // North America
+  "ATL", "DFW", "DEN", "ORD", "LAX", "JFK", "LAS", "MCO", "MIA", "CLT",
+  "SEA", "PHX", "EWR", "SFO", "IAH", "BOS", "FLL", "MSP", "LGA", "DTW",
+  "PHL", "SLC", "BWI", "DCA", "IAD", "SAN", "AUS", "TPA", "BNA", "MDW",
+  "HNL", "PDX", "STL", "RDU", "HOU", "SMF", "MSY", "SJC", "SNA", "MCI",
+  "OAK", "SAT", "RSW", "CLE", "IND", "PIT", "CVG", "CMH", "JAX", "ANC",
+  "YYZ", "YVR", "YUL", "YYC", "YEG", "YOW", "MEX", "CUN", "GDL", "MTY",
+  "PTY", "SJU", "SJO",
+  // Europe
+  "LHR", "CDG", "AMS", "FRA", "IST", "MAD", "BCN", "LGW", "MUC", "FCO",
+  "SVO", "DME", "LIS", "ORY", "DUB", "ZRH", "CPH", "PMI", "MAN", "OSL",
+  "ARN", "STN", "DUS", "VIE", "BRU", "MXP", "ATH", "HEL", "TXL", "BER",
+  "HAM", "GVA", "LYS", "NCE", "PRG", "WAW", "BUD", "OTP", "EDI", "BHX",
+  "GLA", "LTN", "KEF", "AGP", "ALC", "OPO", "TLS", "MRS", "STR", "CGN",
+  "KRK", "GDN", "RIX", "TLL", "VNO", "SOF", "BEG", "ZAG", "LJU", "SKG",
+  // Middle East & Africa
+  "DXB", "DOH", "AUH", "JED", "RUH", "TLV", "CAI", "AMM", "KWI", "BAH",
+  "MCT", "JNB", "CPT", "NBO", "ADD", "LOS", "CMN", "ALG", "TUN",
+  // Asia-Pacific
+  "PEK", "PKX", "PVG", "SHA", "CAN", "SZX", "CTU", "KMG", "XIY", "CKG",
+  "HKG", "TPE", "ICN", "GMP", "NRT", "HND", "KIX", "ITM", "NGO", "FUK",
+  "CTS", "OKA", "SIN", "KUL", "BKK", "DMK", "CGK", "MNL", "SGN", "HAN",
+  "DEL", "BOM", "BLR", "MAA", "HYD", "CCU", "CMB", "DAC", "KHI", "LHE",
+  "ISB", "KTM", "SYD", "MEL", "BNE", "PER", "ADL", "AKL", "CHC", "WLG",
+  "NAN",
+  // South America
+  "GRU", "GIG", "BSB", "CGH", "SDU", "EZE", "AEP", "SCL", "LIM", "BOG",
+  "MDE", "UIO", "CCS", "MVD", "ASU", "VVI", "LPB"
 ];
 
-// An airport bundle is only shippable when its mapped walkways genuinely
-// connect the airport: enough gates, reachable from security or an entrance.
+// Tier "walkways" requires mapped corridors that genuinely connect the
+// airport: enough gates, reachable from security or an entrance. Airports
+// below that bar still ship as tier "approximate" when OSM has real gate
+// positions to show (no fabricated corridors, signage-based guidance).
 const MIN_CONNECTED_GATES = 10;
 const MIN_GATE_CONNECTIVITY_RATIO = 0.35;
+const MIN_APPROXIMATE_GATES = 5;
 const GATE_SNAP_MAX_METERS = 150;
 const MAX_AMENITIES = 40;
 
@@ -59,20 +89,24 @@ out skel qt;`;
 
 async function fetchOverpass(iata) {
   let lastError;
-  for (const endpoint of OVERPASS_ENDPOINTS) {
-    try {
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "content-type": "application/x-www-form-urlencoded" },
-        body: `data=${encodeURIComponent(overpassQuery(iata))}`
-      });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const payload = await response.json();
-      if (!Array.isArray(payload.elements)) throw new Error("Malformed Overpass response");
-      return payload.elements;
-    } catch (error) {
-      lastError = error;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    for (const endpoint of OVERPASS_ENDPOINTS) {
+      try {
+        const response = await fetch(endpoint, {
+          method: "POST",
+          headers: { "content-type": "application/x-www-form-urlencoded" },
+          body: `data=${encodeURIComponent(overpassQuery(iata))}`
+        });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const payload = await response.json();
+        if (!Array.isArray(payload.elements)) throw new Error("Malformed Overpass response");
+        return payload.elements;
+      } catch (error) {
+        lastError = error;
+      }
     }
+    // Rate limits clear after a pause; one long backoff rescues most 429 runs.
+    if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 45000));
   }
   throw new Error(`All Overpass endpoints failed for ${iata}: ${lastError?.message}`);
 }
@@ -182,7 +216,7 @@ function buildAirport(iata, elements) {
   }
 
   const walkVertices = [...vertices.values()];
-  if (!walkVertices.length) return { rejected: `no mapped walkways` };
+  if (!walkVertices.length) return buildGateLocations(iata, elements, "no mapped walkways");
 
   const snapped = [];
   for (const poi of pois) {
@@ -249,19 +283,53 @@ function buildAirport(iata, elements) {
     .sort((a, b) => b[1] - a[1])[0] || [null, 0];
 
   if (connectedGates < MIN_CONNECTED_GATES) {
-    return { rejected: `only ${connectedGates} gates routable over mapped walkways` };
+    return buildGateLocations(iata, elements, `only ${connectedGates} gates routable over mapped walkways`);
   }
   if (totalGates && connectedGates / totalGates < MIN_GATE_CONNECTIVITY_RATIO) {
-    return { rejected: `walkways reach ${connectedGates}/${totalGates} gates — coverage too sparse` };
+    return buildGateLocations(iata, elements, `walkways reach ${connectedGates}/${totalGates} gates — coverage too sparse`);
   }
 
   const kept = [...vertices.values()].filter((vertex) => componentOf.get(vertex.id) === mainComponent);
   const keptIds = new Set(kept.map((vertex) => vertex.id));
   const hasAnchor = kept.some((vertex) => vertex.kind === "security" || vertex.kind === "arrival");
   if (!hasAnchor) {
-    return { rejected: "no security checkpoint or main entrance on the routable network" };
+    return buildGateLocations(iata, elements, "no security checkpoint or main entrance on the routable network");
   }
 
+  const keptEdges = [...edges.values()].filter((edge) => keptIds.has(edge.from) && keptIds.has(edge.to));
+  return emitBundle(iata, kept, keptEdges, "walkways", { gates: connectedGates, totalGates });
+}
+
+// Tier "approximate": real gate/security/entrance/amenity positions only, no
+// edges — the client gives signage-based guidance with approximate distances
+// instead of pretending to know corridors that are not mapped.
+function buildGateLocations(iata, elements, walkwayReason) {
+  const seen = new Set();
+  const points = [];
+  for (const element of elements) {
+    if (element.type !== "node" || !element.tags || element.lat === undefined) continue;
+    const kind = classifyNode(element.tags);
+    if (kind === "junction" || seen.has(element.id)) continue;
+    seen.add(element.id);
+    points.push({
+      id: `n${element.id}`,
+      lat: element.lat,
+      lon: element.lon,
+      kind,
+      tags: element.tags,
+      level: firstLevel(element.tags)
+    });
+  }
+
+  const gates = points.filter((point) => point.kind === "gate");
+  if (gates.length < MIN_APPROXIMATE_GATES) {
+    return { rejected: `${walkwayReason}; only ${gates.length} mapped gate position(s)` };
+  }
+
+  return emitBundle(iata, points, [], "approximate", { gates: gates.length, totalGates: gates.length });
+}
+
+function emitBundle(iata, kept, keptEdges, routing, gateStats) {
   // Project lat/lon to local meters (equirectangular, y flipped for SVG).
   const latRef = kept.reduce((sum, v) => sum + v.lat, 0) / kept.length;
   const metersPerDegLon = 111320 * Math.cos((latRef * Math.PI) / 180);
@@ -283,12 +351,9 @@ function buildAirport(iata, elements) {
           : (vertex.tags.name || "")
   }));
 
-  const keptEdges = [...edges.values()].filter((edge) => keptIds.has(edge.from) && keptIds.has(edge.to));
-
-  const gatePlaces = nodes.filter((node) => node.kind === "gate");
   const amenityNodes = nodes.filter((node) => node.kind === "amenity" && node.label);
   const places = [
-    ...gatePlaces.map((node) => ({ id: node.id, kind: "gate", label: node.label, nodeId: node.id })),
+    ...nodes.filter((node) => node.kind === "gate").map((node) => ({ id: node.id, kind: "gate", label: node.label, nodeId: node.id })),
     ...nodes.filter((node) => node.kind === "security").map((node) => ({ id: node.id, kind: "security", label: node.label, nodeId: node.id })),
     ...nodes.filter((node) => node.kind === "arrival").map((node) => ({ id: node.id, kind: "arrival", label: node.label, nodeId: node.id })),
     ...amenityNodes.slice(0, MAX_AMENITIES).map((node) => ({ id: node.id, kind: "amenity", label: node.label, nodeId: node.id }))
@@ -300,10 +365,13 @@ function buildAirport(iata, elements) {
   return {
     map: {
       airportCode: iata,
-      name: `${iata} (OpenStreetMap indoor data)`,
+      name: routing === "walkways"
+        ? `${iata} (OpenStreetMap indoor data)`
+        : `${iata} (OpenStreetMap gate positions)`,
       version,
       source: "openstreetmap-indoor",
       attribution: "Map data © OpenStreetMap contributors, ODbL",
+      routing,
       scale: { unit: "meter", pixelsPerMeter: 1 },
       floors: levels.map((id) => ({ id, label: `Level ${id.slice(1)}` })),
       nodes,
@@ -311,7 +379,7 @@ function buildAirport(iata, elements) {
       places,
       closures: []
     },
-    stats: { gates: connectedGates, totalGates, nodes: nodes.length, edges: keptEdges.length }
+    stats: { ...gateStats, nodes: nodes.length, edges: keptEdges.length, routing }
   };
 }
 
@@ -340,25 +408,19 @@ for (const iata of airports) {
           version: result.map.version,
           updatedAt: new Date().toISOString(),
           attribution: result.map.attribution,
+          routing: result.map.routing,
           map: result.map
         })
       );
-      catalogEntries.push({
-        airportCode: iata,
-        bundleUrl: `/maps/${iata}.json`,
-        format: "gate-guide-airport-map",
-        version: result.map.version,
-        updatedAt: new Date().toISOString(),
-        source: "openstreetmap-indoor"
-      });
+      catalogEntries.push({ airportCode: iata });
       const { stats } = result;
-      console.log(`ok (${stats.gates}/${stats.totalGates} gates, ${stats.nodes} nodes, ${stats.edges} edges)`);
+      console.log(`ok [${stats.routing}] (${stats.gates}/${stats.totalGates} gates, ${stats.nodes} nodes, ${stats.edges} edges)`);
     }
   } catch (error) {
     rejected.push(`${iata}: ${error.message}`);
     console.log(`failed (${error.message})`);
   }
-  await new Promise((resolve) => setTimeout(resolve, 1500));
+  await new Promise((resolve) => setTimeout(resolve, 2500));
 }
 
 // The catalog always reflects every bundle on disk, so partial reruns for a
@@ -374,7 +436,8 @@ for (const file of (await readdir("public/maps")).sort()) {
     format: payload.format || "gate-guide-airport-map",
     version: payload.version || null,
     updatedAt: payload.updatedAt || null,
-    source: payload.source || "openstreetmap-indoor"
+    source: payload.source || "openstreetmap-indoor",
+    routing: payload.routing || payload.map?.routing || "walkways"
   });
 }
 

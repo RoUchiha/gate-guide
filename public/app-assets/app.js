@@ -142,12 +142,14 @@ async function loadAirportCatalog() {
   try {
     const response = await fetch("/api/airport-map/catalog");
     const catalog = await response.json();
-    const codes = (catalog.entries || []).map((entry) => entry.airportCode).sort();
-    if (!codes.length) return;
-    elements.airportSelect.innerHTML = codes
-      .map((code) => `<option value="${escapeHtml(code)}">${escapeHtml(code)}</option>`)
+    const entries = (catalog.entries || [])
+      .slice()
+      .sort((a, b) => a.airportCode.localeCompare(b.airportCode));
+    if (!entries.length) return;
+    elements.airportSelect.innerHTML = entries
+      .map((entry) => `<option value="${escapeHtml(entry.airportCode)}">${escapeHtml(entry.airportCode)}${entry.routing === "approximate" ? " ≈" : ""}</option>`)
       .join("");
-    state.catalogCodes = codes;
+    state.catalogCodes = entries.map((entry) => entry.airportCode);
   } catch {
     // The selector simply stays empty when the catalog is unavailable.
   }
@@ -187,6 +189,9 @@ async function loadAirportMap(airportCode) {
       : payload.providerMode === "production"
         ? `Loaded production ${state.map.airportCode} map bundle (${state.map.version}).`
         : `Using demo ${state.map.airportCode} map bundle. ${payload.warnings?.[0] || ""}`.trim());
+    if (state.map.routing === "approximate") {
+      addAlert(`${state.map.airportCode} has mapped gate positions only — guidance is approximate, follow airport signage.`);
+    }
     for (const warning of payload.diagnostics?.warnings || []) addAlert(`Map warning: ${warning}`);
   } catch (error) {
     state.mapDiagnostics = error.diagnostics || null;
@@ -239,6 +244,7 @@ function resolveDestinationNode(gate) {
 function defaultStartNode(map) {
   return map.nodes.find((node) => node.kind === "security")?.id
     || map.nodes.find((node) => node.kind === "arrival")?.id
+    || map.nodes.find((node) => node.kind === "gate")?.id
     || map.nodes[0].id;
 }
 
@@ -267,6 +273,29 @@ function currentRoute() {
   if (!state.map.nodes.some((node) => node.id === state.destinationNodeId)) {
     state.destinationNodeId = state.map.places.find((place) => place.kind === "gate")?.nodeId
       || state.map.nodes[0].id;
+  }
+
+  // Gate-position-only bundles have no mapped corridors: give signage-based
+  // guidance with an explicitly approximate distance instead of a fake route.
+  if (state.map.routing === "approximate") {
+    const from = getNode(state.map, state.fromNodeId);
+    const to = getNode(state.map, state.destinationNodeId);
+    const directMeters = Math.hypot(to.x - from.x, to.y - from.y);
+    const meters = directMeters * 1.4;
+    const etaMinutes = Math.max(1, Math.ceil(meters / 72));
+    return {
+      ok: true,
+      approximate: true,
+      path: [from.id, to.id],
+      meters,
+      etaMinutes,
+      confidence: "approximate",
+      steps: [
+        `Follow airport signage toward gate ${to.label || state.map.airportCode}.`,
+        `Approximate walk ${Math.round(meters)} m, about ${etaMinutes} min (straight-line estimate + typical detour).`,
+        "This airport has real mapped gate positions but no indoor walkway data yet, so turn-by-turn routing is not available."
+      ]
+    };
   }
 
   return routeBetween(state.map, state.fromNodeId, state.destinationNodeId, {
@@ -379,9 +408,13 @@ function renderMap(route) {
 
   const routeNodes = route.path.map((nodeId) => getNode(map, nodeId));
   const activeGate = getNode(map, state.destinationNodeId).label;
-  elements.routeTitle.textContent = route.ok ? `Route to gate ${activeGate}` : "No route available";
+  elements.routeTitle.textContent = route.ok
+    ? route.approximate
+      ? `Toward gate ${activeGate} (approximate)`
+      : `Route to gate ${activeGate}`
+    : "No route available";
   elements.routeMeta.innerHTML = route.ok
-    ? `${Math.round(route.meters)} m<br>${route.etaMinutes} min<br>${route.confidence} confidence`
+    ? `${route.approximate ? "~" : ""}${Math.round(route.meters)} m<br>${route.etaMinutes} min<br>${route.confidence} confidence`
     : escapeHtml(route.reason);
 
   elements.routeSteps.innerHTML = route.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("");
@@ -402,7 +435,7 @@ function renderMap(route) {
   elements.map.innerHTML = `
     <rect class="terminal-wall" x="${bounds.minX + 16 * s}" y="${bounds.minY + 16 * s}" width="${bounds.width - 32 * s}" height="${bounds.height - 32 * s}" rx="${8 * s}"></rect>
     ${map.edges.map((edge) => renderEdge(map, edge, s)).join("")}
-    ${route.ok ? `<polyline class="route-line" points="${routePath}" stroke-width="${10 * s}"></polyline>` : ""}
+    ${route.ok ? `<polyline class="route-line" points="${routePath}" stroke-width="${10 * s}"${route.approximate ? ` stroke-dasharray="${14 * s} ${12 * s}" opacity="0.75"` : ""}></polyline>` : ""}
     ${map.places.map((place) => renderPlace(map, place, s)).join("")}
     ${renderUserDot(map, s)}
   `;

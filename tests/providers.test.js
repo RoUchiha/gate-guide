@@ -230,6 +230,18 @@ test("bundled map bundles serve as production maps", async () => {
   assert.equal(result.diagnostics.valid, true);
 });
 
+test("approximate gate-position bundles validate as production maps", async () => {
+  const result = await resolveAirportMapFromProviders("APX", {
+    env: { GATE_GUIDE_MAP_MODE: "production" },
+    bundleDir: "tests/fixtures/maps/"
+  });
+
+  assert.equal(result.providerMode, "production");
+  assert.equal(result.map.routing, "approximate");
+  assert.equal(result.map.edges.length, 0);
+  assert.equal(result.diagnostics.valid, true);
+});
+
 test("bundled catalog lists bundles when no remote source is configured", async () => {
   const catalog = await resolveAirportMapCatalog({
     env: {},
