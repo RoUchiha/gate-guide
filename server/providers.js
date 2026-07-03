@@ -35,7 +35,7 @@ const airportIcaoToIata = {
 export function providerStatus(env = process.env) {
   const productionMapsRequired = requiresProductionMaps(env);
   return {
-    flight: env.FLIGHTAWARE_AEROAPI_KEY ? "flightaware-aeroapi" : "opensky-network",
+    flight: env.FLIGHTAWARE_AEROAPI_KEY ? "flightaware-aeroapi" : "live-adsb",
     airportMap: mapProviderName(env),
     productionMapsRequired,
     liveFlightsRequired: requiresLiveFlights(env),
@@ -51,9 +51,21 @@ export async function resolveFlightFromProviders(query, options = {}) {
     return resolveFlightAware(query, { env, fetchImpl });
   }
 
+  // Live provider chain: community ADS-B (keyless, cloud-friendly) first,
+  // then OpenSky (better with registered credentials). Demo data is only a
+  // last resort and never used in strict live mode.
+  let primaryError;
+  try {
+    return await resolveCommunityAdsb(query, { env, fetchImpl });
+  } catch (error) {
+    if (error.statusCode === 400) throw error;
+    primaryError = error;
+  }
+
   try {
     return await resolveOpenSky(query, { env, fetchImpl });
-  } catch (error) {
+  } catch (openSkyError) {
+    const error = primaryError?.statusCode === 404 ? primaryError : openSkyError;
     if (error.statusCode === 400 || error.statusCode === 404 || requiresLiveFlights(env)) {
       throw error;
     }
@@ -62,7 +74,7 @@ export async function resolveFlightFromProviders(query, options = {}) {
     return {
       ...itinerary,
       providerMode: "demo",
-      warnings: [`Live OpenSky lookup failed (${error.message}). Showing demo data.`]
+      warnings: [`Live flight lookup failed (${error.message}). Showing demo data.`]
     };
   }
 }
@@ -287,6 +299,84 @@ function normalizeMapPayload(payload, entry) {
     bundleUrl: entry.bundleUrl
   };
   return { map, provenance };
+}
+
+// Community ADS-B: api.adsb.lol for live aircraft state (no key, no cloud-IP
+// restrictions) plus api.adsbdb.com for callsign route records. Real data
+// with the same honest limitation as all ADS-B sources: no gate assignments.
+async function resolveCommunityAdsb({ airline, flightNumber, date }, { fetchImpl }) {
+  const iata = String(airline || "").trim().toUpperCase();
+  const number = String(flightNumber || "").trim();
+  if (!iata || !number) throw httpError(400, "Airline and flight number are required.");
+
+  const callsign = `${airlineIcaoPrefixes[iata] || iata}${number}`;
+
+  const [stateResult, routeResult] = await Promise.allSettled([
+    fetchImpl(`https://api.adsb.lol/v2/callsign/${encodeURIComponent(callsign)}`),
+    fetchImpl(`https://api.adsbdb.com/v0/callsign/${encodeURIComponent(callsign)}`)
+  ]);
+
+  let aircraft = null;
+  if (stateResult.status === "fulfilled" && stateResult.value.ok) {
+    const payload = await stateResult.value.json();
+    aircraft = (payload.ac || [])[0] || null;
+  }
+
+  let route = null;
+  if (routeResult.status === "fulfilled" && routeResult.value.ok) {
+    const payload = await routeResult.value.json();
+    route = payload.response?.flightroute || null;
+  }
+
+  if (!aircraft && !route) {
+    const stateAnswered = stateResult.status === "fulfilled" && stateResult.value.ok;
+    const routeAnswered = routeResult.status === "fulfilled" && routeResult.value.ok;
+    if (!stateAnswered && !routeAnswered) {
+      throw httpError(502, "Live ADS-B sources are unreachable.");
+    }
+    throw httpError(404, `${iata} ${number} (callsign ${callsign}) is not currently being tracked and has no route on record. ADS-B covers airborne or recently active flights.`);
+  }
+
+  const fetchedAt = new Date().toISOString();
+  const onGround = aircraft?.alt_baro === "ground";
+  const altitudeMeters = typeof aircraft?.alt_baro === "number" ? Math.round(aircraft.alt_baro * 0.3048) : null;
+  const speedKmh = typeof aircraft?.gs === "number" ? Math.round(aircraft.gs * 1.852) : null;
+  const status = !aircraft
+    ? "not currently airborne (route on record, live ADS-B)"
+    : onGround
+      ? "on ground (live ADS-B)"
+      : `en route (live ADS-B${altitudeMeters ? `, ${altitudeMeters} m` : ""}${speedKmh ? `, ${speedKmh} km/h` : ""})`;
+
+  const leg = {
+    id: `${callsign}-${aircraft?.hex || "route"}`,
+    airline: iata,
+    airlineName: route?.airline?.name || "",
+    flightNumber: number,
+    date: date || fetchedAt.slice(0, 10),
+    origin: route?.origin?.iata_code || "",
+    destination: route?.destination?.iata_code || "",
+    terminal: "",
+    gate: "",
+    status,
+    scheduledDeparture: "",
+    estimatedDeparture: "",
+    scheduledArrival: "",
+    estimatedArrival: "",
+    position: aircraft && typeof aircraft.lat === "number"
+      ? { lat: aircraft.lat, lon: aircraft.lon, lastContact: fetchedAt }
+      : null,
+    fetchedAt,
+    source: "live ADS-B (adsb.lol + adsbdb)"
+  };
+
+  return {
+    itineraryId: `${callsign}-${date || "live"}`,
+    source: "live ADS-B (adsb.lol + adsbdb)",
+    providerMode: "live",
+    fetchedAt,
+    warnings: ["ADS-B provides live aircraft data but no gate assignments; gates need an airline/airport feed such as FlightAware AeroAPI."],
+    legs: [leg]
+  };
 }
 
 let openSkyToken = null;

@@ -258,8 +258,50 @@ test("strict flight mode refuses demo fallback when live lookup fails", async ()
   );
 });
 
-test("providerStatus reports OpenSky as the default live flight provider", () => {
+test("providerStatus reports live ADS-B as the default flight provider", () => {
   const status = providerStatus({ GATE_GUIDE_FLIGHT_MODE: "production" });
-  assert.equal(status.flight, "opensky-network");
+  assert.equal(status.flight, "live-adsb");
   assert.equal(status.liveFlightsRequired, true);
+});
+
+test("community ADS-B adapter combines live state and route records", async () => {
+  const itinerary = await resolveFlightFromProviders(
+    { airline: "BA", flightNumber: "33", date: "2026-07-02" },
+    {
+      env: {},
+      fetchImpl: async (url) => {
+        if (String(url).includes("adsb.lol")) {
+          return {
+            ok: true,
+            json: async () => ({ ac: [{ hex: "406f73", flight: "BAW33  ", alt_baro: 35000, gs: 512, lat: 51.1, lon: -30.2 }] })
+          };
+        }
+        if (String(url).includes("adsbdb.com")) {
+          return {
+            ok: true,
+            json: async () => ({
+              response: {
+                flightroute: {
+                  callsign: "BAW33",
+                  airline: { name: "British Airways", iata: "BA" },
+                  origin: { iata_code: "LHR" },
+                  destination: { iata_code: "DFW" }
+                }
+              }
+            })
+          };
+        }
+        throw new Error(`unexpected url ${url}`);
+      }
+    }
+  );
+
+  assert.equal(itinerary.providerMode, "live");
+  assert.match(itinerary.source, /adsb\.lol/);
+  assert.equal(itinerary.legs[0].origin, "LHR");
+  assert.equal(itinerary.legs[0].destination, "DFW");
+  assert.equal(itinerary.legs[0].airlineName, "British Airways");
+  assert.equal(itinerary.legs[0].gate, "");
+  assert.match(itinerary.legs[0].status, /en route/);
+  assert.equal(itinerary.legs[0].position.lat, 51.1);
 });
