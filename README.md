@@ -5,7 +5,7 @@ Spec-driven airport wayfinding PWA for guiding travelers from check-in, security
 **Live app:** https://gate-guide-ashen.vercel.app
 
 - **Live flight tracking with no API key**: community ADS-B data (api.adsb.lol live aircraft state + api.adsbdb.com route records), with OpenSky Network as fallback and FlightAware AeroAPI as the optional gate-capable upgrade. ADS-B sources honestly report gates as "not published" — gate assignments only exist in airline/airport feeds.
-- **Real airport maps**: bundled indoor map data for AMS, CDG, FRA, HEL, LHR, MUC, and ZRH, generated from OpenStreetMap indoor mapping by `scripts/build-osm-maps.js` (Map data © OpenStreetMap contributors, ODbL). Airports whose OSM coverage cannot actually route gate-to-security are rejected by the pipeline, never faked.
+- **Real airport maps for 200+ airports worldwide**, generated from OpenStreetMap by `scripts/build-osm-maps.js` (Map data © OpenStreetMap contributors, ODbL) and refreshed weekly by a scheduled GitHub Actions workflow. Two honest tiers: airports with routable OSM indoor corridors (LHR, CDG, AMS, FRA, MUC, ZRH, LAX, and ~20 more) get full turn-by-turn routing; the rest ship real mapped gate/security/entrance positions with clearly-labeled approximate, signage-based guidance (marked "≈" in the airport picker). Corridors are never fabricated.
 - Weighted, closure-aware routing with an accessible-route mode that avoids stairs-only edges.
 - Installable PWA: offline app shell, versioned service-worker caches, dark mode, real icons.
 - Strict production modes: `GATE_GUIDE_MAP_MODE=production` refuses demo-map fallback; `GATE_GUIDE_FLIGHT_MODE=production` refuses demo flight data — the app shows honest "not configured" errors instead of fabricated results.
