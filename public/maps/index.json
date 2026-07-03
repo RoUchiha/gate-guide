@@ -1,63 +1,1843 @@
 {
   "source": "openstreetmap-indoor",
-  "version": "2026-07-02",
+  "version": "2026-07-03",
   "attribution": "Map data © OpenStreetMap contributors, ODbL",
   "entries": [
+    {
+      "airportCode": "ADD",
+      "bundleUrl": "/maps/ADD.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:57:48.435Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "ADL",
+      "bundleUrl": "/maps/ADL.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T23:00:38.436Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "AEP",
+      "bundleUrl": "/maps/AEP.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T23:02:40.873Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "AGP",
+      "bundleUrl": "/maps/AGP.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:55:57.368Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "AKL",
+      "bundleUrl": "/maps/AKL.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T23:00:42.347Z",
+      "source": "openstreetmap-indoor",
+      "routing": "walkways"
+    },
+    {
+      "airportCode": "ALC",
+      "bundleUrl": "/maps/ALC.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:56:00.445Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "ALG",
+      "bundleUrl": "/maps/ALG.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:57:58.015Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "AMM",
+      "bundleUrl": "/maps/AMM.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:57:26.926Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
     {
       "airportCode": "AMS",
       "bundleUrl": "/maps/AMS.json",
       "format": "gate-guide-airport-map",
-      "version": "2026-07-02-osm",
-      "updatedAt": "2026-07-02T22:08:32.894Z",
-      "source": "openstreetmap-indoor"
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:48:48.445Z",
+      "source": "openstreetmap-indoor",
+      "routing": "walkways"
+    },
+    {
+      "airportCode": "ANC",
+      "bundleUrl": "/maps/ANC.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:47:38.828Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "ARN",
+      "bundleUrl": "/maps/ARN.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:51:56.034Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "ATH",
+      "bundleUrl": "/maps/ATH.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:54:01.795Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "ATL",
+      "bundleUrl": "/maps/ATL.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:44:17.851Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "AUH",
+      "bundleUrl": "/maps/AUH.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:57:09.428Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "AUS",
+      "bundleUrl": "/maps/AUS.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:46:16.357Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "BAH",
+      "bundleUrl": "/maps/BAH.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:57:32.674Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "BCN",
+      "bundleUrl": "/maps/BCN.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:50:32.803Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "BEG",
+      "bundleUrl": "/maps/BEG.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:56:49.359Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "BER",
+      "bundleUrl": "/maps/BER.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:54:31.261Z",
+      "source": "openstreetmap-indoor",
+      "routing": "walkways"
+    },
+    {
+      "airportCode": "BHX",
+      "bundleUrl": "/maps/BHX.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:55:45.041Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "BKK",
+      "bundleUrl": "/maps/BKK.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:59:24.871Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "BLR",
+      "bundleUrl": "/maps/BLR.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:59:51.683Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "BNA",
+      "bundleUrl": "/maps/BNA.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:46:23.270Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "BNE",
+      "bundleUrl": "/maps/BNE.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T23:00:32.010Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "BOG",
+      "bundleUrl": "/maps/BOG.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T23:02:50.206Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "BOM",
+      "bundleUrl": "/maps/BOM.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:59:48.597Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "BOS",
+      "bundleUrl": "/maps/BOS.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:45:34.169Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "BRU",
+      "bundleUrl": "/maps/BRU.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:53:45.259Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "BSB",
+      "bundleUrl": "/maps/BSB.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T23:01:01.751Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "BUD",
+      "bundleUrl": "/maps/BUD.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:55:35.884Z",
+      "source": "openstreetmap-indoor",
+      "routing": "walkways"
+    },
+    {
+      "airportCode": "BWI",
+      "bundleUrl": "/maps/BWI.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:45:58.251Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "CAI",
+      "bundleUrl": "/maps/CAI.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:57:23.770Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "CAN",
+      "bundleUrl": "/maps/CAN.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:58:16.162Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "CCS",
+      "bundleUrl": "/maps/CCS.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T23:02:58.781Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "CCU",
+      "bundleUrl": "/maps/CCU.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T23:00:00.721Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
     },
     {
       "airportCode": "CDG",
       "bundleUrl": "/maps/CDG.json",
       "format": "gate-guide-airport-map",
-      "version": "2026-07-02-osm",
-      "updatedAt": "2026-07-02T22:09:17.831Z",
-      "source": "openstreetmap-indoor"
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:48:43.454Z",
+      "source": "openstreetmap-indoor",
+      "routing": "walkways"
+    },
+    {
+      "airportCode": "CGH",
+      "bundleUrl": "/maps/CGH.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T23:01:09.747Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "CGK",
+      "bundleUrl": "/maps/CGK.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:59:31.519Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "CGN",
+      "bundleUrl": "/maps/CGN.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:56:27.536Z",
+      "source": "openstreetmap-indoor",
+      "routing": "walkways"
+    },
+    {
+      "airportCode": "CHC",
+      "bundleUrl": "/maps/CHC.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T23:00:45.804Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "CKG",
+      "bundleUrl": "/maps/CKG.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:58:31.015Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "CLE",
+      "bundleUrl": "/maps/CLE.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:47:16.744Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "CLT",
+      "bundleUrl": "/maps/CLT.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:45:07.837Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "CMB",
+      "bundleUrl": "/maps/CMB.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T23:00:03.757Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "CMH",
+      "bundleUrl": "/maps/CMH.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:47:32.158Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "CMN",
+      "bundleUrl": "/maps/CMN.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:57:54.485Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "CPH",
+      "bundleUrl": "/maps/CPH.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:51:42.408Z",
+      "source": "openstreetmap-indoor",
+      "routing": "walkways"
+    },
+    {
+      "airportCode": "CPT",
+      "bundleUrl": "/maps/CPT.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:57:41.863Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "CTS",
+      "bundleUrl": "/maps/CTS.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:59:10.909Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "CTU",
+      "bundleUrl": "/maps/CTU.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:58:22.236Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "CUN",
+      "bundleUrl": "/maps/CUN.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:48:11.329Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "CVG",
+      "bundleUrl": "/maps/CVG.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:47:28.443Z",
+      "source": "openstreetmap-indoor",
+      "routing": "walkways"
+    },
+    {
+      "airportCode": "DAC",
+      "bundleUrl": "/maps/DAC.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T23:00:07.880Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "DCA",
+      "bundleUrl": "/maps/DCA.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:46:02.945Z",
+      "source": "openstreetmap-indoor",
+      "routing": "walkways"
+    },
+    {
+      "airportCode": "DEL",
+      "bundleUrl": "/maps/DEL.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:59:45.524Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "DEN",
+      "bundleUrl": "/maps/DEN.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:44:25.734Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "DFW",
+      "bundleUrl": "/maps/DFW.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:44:21.323Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "DME",
+      "bundleUrl": "/maps/DME.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:50:50.297Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "DMK",
+      "bundleUrl": "/maps/DMK.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:59:27.824Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "DOH",
+      "bundleUrl": "/maps/DOH.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:57:05.993Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "DTW",
+      "bundleUrl": "/maps/DTW.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:45:48.193Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "DUB",
+      "bundleUrl": "/maps/DUB.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:51:22.876Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "DUS",
+      "bundleUrl": "/maps/DUS.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:53:23.988Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "DXB",
+      "bundleUrl": "/maps/DXB.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:57:02.651Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "EDI",
+      "bundleUrl": "/maps/EDI.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:55:41.733Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "EWR",
+      "bundleUrl": "/maps/EWR.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:45:23.360Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "EZE",
+      "bundleUrl": "/maps/EZE.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T23:02:37.654Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "FCO",
+      "bundleUrl": "/maps/FCO.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:50:43.074Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "FLL",
+      "bundleUrl": "/maps/FLL.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:45:37.461Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
     },
     {
       "airportCode": "FRA",
       "bundleUrl": "/maps/FRA.json",
       "format": "gate-guide-airport-map",
-      "version": "2026-07-02-osm",
-      "updatedAt": "2026-07-02T22:08:27.399Z",
-      "source": "openstreetmap-indoor"
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:49:02.153Z",
+      "source": "openstreetmap-indoor",
+      "routing": "walkways"
+    },
+    {
+      "airportCode": "FUK",
+      "bundleUrl": "/maps/FUK.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:59:08.034Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "GDL",
+      "bundleUrl": "/maps/GDL.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:48:14.624Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "GDN",
+      "bundleUrl": "/maps/GDN.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:56:33.576Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "GIG",
+      "bundleUrl": "/maps/GIG.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T23:00:58.656Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "GLA",
+      "bundleUrl": "/maps/GLA.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:55:48.450Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "GMP",
+      "bundleUrl": "/maps/GMP.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:58:45.302Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "GRU",
+      "bundleUrl": "/maps/GRU.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T23:00:55.403Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "GVA",
+      "bundleUrl": "/maps/GVA.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:54:37.670Z",
+      "source": "openstreetmap-indoor",
+      "routing": "walkways"
+    },
+    {
+      "airportCode": "HAM",
+      "bundleUrl": "/maps/HAM.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:54:34.474Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "HAN",
+      "bundleUrl": "/maps/HAN.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:59:42.053Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
     },
     {
       "airportCode": "HEL",
       "bundleUrl": "/maps/HEL.json",
       "format": "gate-guide-airport-map",
-      "version": "2026-07-02-osm",
-      "updatedAt": "2026-07-02T22:03:47.074Z",
-      "source": "openstreetmap-indoor"
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:54:06.899Z",
+      "source": "openstreetmap-indoor",
+      "routing": "walkways"
+    },
+    {
+      "airportCode": "HKG",
+      "bundleUrl": "/maps/HKG.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:58:34.438Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "HND",
+      "bundleUrl": "/maps/HND.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:58:53.870Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "HNL",
+      "bundleUrl": "/maps/HNL.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:46:32.516Z",
+      "source": "openstreetmap-indoor",
+      "routing": "walkways"
+    },
+    {
+      "airportCode": "HOU",
+      "bundleUrl": "/maps/HOU.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:46:46.387Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "HYD",
+      "bundleUrl": "/maps/HYD.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:59:57.674Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "IAD",
+      "bundleUrl": "/maps/IAD.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:46:07.283Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "IAH",
+      "bundleUrl": "/maps/IAH.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:45:30.696Z",
+      "source": "openstreetmap-indoor",
+      "routing": "walkways"
+    },
+    {
+      "airportCode": "ICN",
+      "bundleUrl": "/maps/ICN.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:58:41.725Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "IND",
+      "bundleUrl": "/maps/IND.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:47:20.282Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "ISB",
+      "bundleUrl": "/maps/ISB.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T23:00:16.635Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "IST",
+      "bundleUrl": "/maps/IST.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:50:26.123Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "JAX",
+      "bundleUrl": "/maps/JAX.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:47:35.286Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "JED",
+      "bundleUrl": "/maps/JED.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:57:12.341Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "JFK",
+      "bundleUrl": "/maps/JFK.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:44:53.031Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "JNB",
+      "bundleUrl": "/maps/JNB.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:57:38.731Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "KEF",
+      "bundleUrl": "/maps/KEF.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:55:54.286Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "KHI",
+      "bundleUrl": "/maps/KHI.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T23:00:10.832Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "KIX",
+      "bundleUrl": "/maps/KIX.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:58:56.793Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "KMG",
+      "bundleUrl": "/maps/KMG.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:58:25.127Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "KRK",
+      "bundleUrl": "/maps/KRK.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:56:30.490Z",
+      "source": "openstreetmap-indoor",
+      "routing": "walkways"
+    },
+    {
+      "airportCode": "KTM",
+      "bundleUrl": "/maps/KTM.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T23:00:20.152Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "KUL",
+      "bundleUrl": "/maps/KUL.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:59:21.611Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "KWI",
+      "bundleUrl": "/maps/KWI.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:57:29.777Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "LAS",
+      "bundleUrl": "/maps/LAS.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:44:56.409Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "LAX",
+      "bundleUrl": "/maps/LAX.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:44:43.470Z",
+      "source": "openstreetmap-indoor",
+      "routing": "walkways"
+    },
+    {
+      "airportCode": "LGA",
+      "bundleUrl": "/maps/LGA.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:45:44.833Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "LGW",
+      "bundleUrl": "/maps/LGW.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:50:36.116Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "LHE",
+      "bundleUrl": "/maps/LHE.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T23:00:13.768Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
     },
     {
       "airportCode": "LHR",
       "bundleUrl": "/maps/LHR.json",
       "format": "gate-guide-airport-map",
-      "version": "2026-07-02-osm",
-      "updatedAt": "2026-07-02T22:08:39.621Z",
-      "source": "openstreetmap-indoor"
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:48:37.089Z",
+      "source": "openstreetmap-indoor",
+      "routing": "walkways"
+    },
+    {
+      "airportCode": "LIM",
+      "bundleUrl": "/maps/LIM.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T23:02:47.202Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "LIS",
+      "bundleUrl": "/maps/LIS.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:50:53.708Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "LJU",
+      "bundleUrl": "/maps/LJU.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:56:55.404Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "LOS",
+      "bundleUrl": "/maps/LOS.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:57:51.589Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "LTN",
+      "bundleUrl": "/maps/LTN.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:55:51.372Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "LYS",
+      "bundleUrl": "/maps/LYS.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:55:18.374Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "MAA",
+      "bundleUrl": "/maps/MAA.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:59:54.730Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "MAD",
+      "bundleUrl": "/maps/MAD.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:50:29.422Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "MAN",
+      "bundleUrl": "/maps/MAN.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:51:49.593Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "MCI",
+      "bundleUrl": "/maps/MCI.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:47:03.590Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "MCO",
+      "bundleUrl": "/maps/MCO.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:45:00.941Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "MCT",
+      "bundleUrl": "/maps/MCT.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:57:35.807Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "MDE",
+      "bundleUrl": "/maps/MDE.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T23:02:53.029Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "MDW",
+      "bundleUrl": "/maps/MDW.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:46:28.903Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "MEL",
+      "bundleUrl": "/maps/MEL.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T23:00:28.139Z",
+      "source": "openstreetmap-indoor",
+      "routing": "walkways"
+    },
+    {
+      "airportCode": "MEX",
+      "bundleUrl": "/maps/MEX.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:48:08.406Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "MIA",
+      "bundleUrl": "/maps/MIA.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:45:04.647Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "MNL",
+      "bundleUrl": "/maps/MNL.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:59:35.954Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "MRS",
+      "bundleUrl": "/maps/MRS.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:56:18.640Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "MSP",
+      "bundleUrl": "/maps/MSP.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:45:41.075Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "MSY",
+      "bundleUrl": "/maps/MSY.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:46:52.405Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "MTY",
+      "bundleUrl": "/maps/MTY.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:48:21.005Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
     },
     {
       "airportCode": "MUC",
       "bundleUrl": "/maps/MUC.json",
       "format": "gate-guide-airport-map",
-      "version": "2026-07-02-osm",
-      "updatedAt": "2026-07-02T22:02:37.088Z",
-      "source": "openstreetmap-indoor"
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:50:39.792Z",
+      "source": "openstreetmap-indoor",
+      "routing": "walkways"
+    },
+    {
+      "airportCode": "MXP",
+      "bundleUrl": "/maps/MXP.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:53:48.565Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "NAN",
+      "bundleUrl": "/maps/NAN.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T23:00:51.966Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "NBO",
+      "bundleUrl": "/maps/NBO.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:57:45.543Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "NCE",
+      "bundleUrl": "/maps/NCE.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:55:24.229Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "NGO",
+      "bundleUrl": "/maps/NGO.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:59:03.771Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "NRT",
+      "bundleUrl": "/maps/NRT.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:58:48.839Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "OAK",
+      "bundleUrl": "/maps/OAK.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:47:06.806Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "OKA",
+      "bundleUrl": "/maps/OKA.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:59:13.978Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "OPO",
+      "bundleUrl": "/maps/OPO.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:56:03.739Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "ORD",
+      "bundleUrl": "/maps/ORD.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:44:29.857Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "ORY",
+      "bundleUrl": "/maps/ORY.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:50:58.118Z",
+      "source": "openstreetmap-indoor",
+      "routing": "walkways"
+    },
+    {
+      "airportCode": "OSL",
+      "bundleUrl": "/maps/OSL.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:51:52.759Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "OTP",
+      "bundleUrl": "/maps/OTP.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:55:38.796Z",
+      "source": "openstreetmap-indoor",
+      "routing": "walkways"
+    },
+    {
+      "airportCode": "PDX",
+      "bundleUrl": "/maps/PDX.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:46:36.733Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "PEK",
+      "bundleUrl": "/maps/PEK.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:58:04.107Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "PER",
+      "bundleUrl": "/maps/PER.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T23:00:35.372Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "PHL",
+      "bundleUrl": "/maps/PHL.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:45:51.324Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "PHX",
+      "bundleUrl": "/maps/PHX.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:45:19.865Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "PIT",
+      "bundleUrl": "/maps/PIT.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:47:25.170Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "PKX",
+      "bundleUrl": "/maps/PKX.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:58:07.103Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "PMI",
+      "bundleUrl": "/maps/PMI.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:51:46.136Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "PRG",
+      "bundleUrl": "/maps/PRG.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:55:28.575Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "PTY",
+      "bundleUrl": "/maps/PTY.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:48:23.867Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "PVG",
+      "bundleUrl": "/maps/PVG.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:58:10.052Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "RDU",
+      "bundleUrl": "/maps/RDU.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:46:43.190Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "RIX",
+      "bundleUrl": "/maps/RIX.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:56:36.945Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "RSW",
+      "bundleUrl": "/maps/RSW.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:47:13.635Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "RUH",
+      "bundleUrl": "/maps/RUH.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:57:15.363Z",
+      "source": "openstreetmap-indoor",
+      "routing": "walkways"
+    },
+    {
+      "airportCode": "SAN",
+      "bundleUrl": "/maps/SAN.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:46:10.931Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "SAT",
+      "bundleUrl": "/maps/SAT.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:47:10.437Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "SCL",
+      "bundleUrl": "/maps/SCL.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T23:02:43.992Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "SDU",
+      "bundleUrl": "/maps/SDU.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T23:02:34.626Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "SEA",
+      "bundleUrl": "/maps/SEA.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:45:12.675Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "SFO",
+      "bundleUrl": "/maps/SFO.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:45:26.748Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "SGN",
+      "bundleUrl": "/maps/SGN.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:59:39.024Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "SHA",
+      "bundleUrl": "/maps/SHA.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:58:13.085Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "SIN",
+      "bundleUrl": "/maps/SIN.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:59:18.390Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "SJC",
+      "bundleUrl": "/maps/SJC.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:46:55.833Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "SJO",
+      "bundleUrl": "/maps/SJO.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:48:33.087Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "SJU",
+      "bundleUrl": "/maps/SJU.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:48:28.214Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "SKG",
+      "bundleUrl": "/maps/SKG.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:56:58.360Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "SLC",
+      "bundleUrl": "/maps/SLC.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:45:54.524Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "SMF",
+      "bundleUrl": "/maps/SMF.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:46:49.451Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "SNA",
+      "bundleUrl": "/maps/SNA.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:47:00.632Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "SOF",
+      "bundleUrl": "/maps/SOF.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:56:46.410Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "STL",
+      "bundleUrl": "/maps/STL.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:46:39.868Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "STN",
+      "bundleUrl": "/maps/STN.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:53:18.959Z",
+      "source": "openstreetmap-indoor",
+      "routing": "walkways"
+    },
+    {
+      "airportCode": "STR",
+      "bundleUrl": "/maps/STR.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:56:23.501Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "SVO",
+      "bundleUrl": "/maps/SVO.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:50:46.409Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "SYD",
+      "bundleUrl": "/maps/SYD.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T23:00:23.655Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "SZX",
+      "bundleUrl": "/maps/SZX.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:58:19.230Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "TLL",
+      "bundleUrl": "/maps/TLL.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:56:40.051Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "TLS",
+      "bundleUrl": "/maps/TLS.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:56:11.440Z",
+      "source": "openstreetmap-indoor",
+      "routing": "walkways"
+    },
+    {
+      "airportCode": "TLV",
+      "bundleUrl": "/maps/TLV.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:57:19.425Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "TPA",
+      "bundleUrl": "/maps/TPA.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:46:19.633Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "TPE",
+      "bundleUrl": "/maps/TPE.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:58:38.260Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "TUN",
+      "bundleUrl": "/maps/TUN.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:58:00.967Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "UIO",
+      "bundleUrl": "/maps/UIO.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T23:02:55.866Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "VIE",
+      "bundleUrl": "/maps/VIE.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:53:39.578Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "VNO",
+      "bundleUrl": "/maps/VNO.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:56:43.370Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "WAW",
+      "bundleUrl": "/maps/WAW.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:55:32.569Z",
+      "source": "openstreetmap-indoor",
+      "routing": "walkways"
+    },
+    {
+      "airportCode": "WLG",
+      "bundleUrl": "/maps/WLG.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T23:00:49.131Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "XIY",
+      "bundleUrl": "/maps/XIY.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:58:28.174Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "YEG",
+      "bundleUrl": "/maps/YEG.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:48:01.338Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "YOW",
+      "bundleUrl": "/maps/YOW.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:48:05.060Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "YUL",
+      "bundleUrl": "/maps/YUL.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:47:54.836Z",
+      "source": "openstreetmap-indoor",
+      "routing": "walkways"
+    },
+    {
+      "airportCode": "YVR",
+      "bundleUrl": "/maps/YVR.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:47:46.612Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "YYC",
+      "bundleUrl": "/maps/YYC.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:47:58.423Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "YYZ",
+      "bundleUrl": "/maps/YYZ.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:47:42.152Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
+    },
+    {
+      "airportCode": "ZAG",
+      "bundleUrl": "/maps/ZAG.json",
+      "format": "gate-guide-airport-map",
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:56:52.411Z",
+      "source": "openstreetmap-indoor",
+      "routing": "approximate"
     },
     {
       "airportCode": "ZRH",
       "bundleUrl": "/maps/ZRH.json",
       "format": "gate-guide-airport-map",
-      "version": "2026-07-02-osm",
-      "updatedAt": "2026-07-02T22:03:00.461Z",
-      "source": "openstreetmap-indoor"
+      "version": "2026-07-03-osm",
+      "updatedAt": "2026-07-03T22:51:28.038Z",
+      "source": "openstreetmap-indoor",
+      "routing": "walkways"
     }
   ]
 }
