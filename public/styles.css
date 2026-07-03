@@ -321,21 +321,21 @@ h2 {
   stroke-width: 2;
 }
 
+/* Size-like properties (stroke-width, font-size) are set as SVG presentation
+   attributes in app.js so they can scale with the loaded map's real-world
+   extent — CSS rules here would override those attributes. */
 .map-edge {
   stroke: var(--edge);
-  stroke-width: 8;
   stroke-linecap: round;
 }
 
 .map-edge.closed {
   stroke: var(--edge-closed);
-  stroke-dasharray: 10 8;
 }
 
 .route-line {
   fill: none;
   stroke: var(--teal);
-  stroke-width: 10;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
@@ -343,7 +343,6 @@ h2 {
 .place-dot {
   fill: var(--panel);
   stroke: var(--navy);
-  stroke-width: 3;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -354,14 +353,12 @@ h2 {
 
 .place-label {
   fill: var(--ink);
-  font-size: 18px;
   font-weight: 800;
 }
 
 .user-dot {
   fill: var(--amber);
   stroke: #fff;
-  stroke-width: 5;
 }
 
 .route-steps {

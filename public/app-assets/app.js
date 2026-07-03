@@ -402,7 +402,7 @@ function renderMap(route) {
   elements.map.innerHTML = `
     <rect class="terminal-wall" x="${bounds.minX + 16 * s}" y="${bounds.minY + 16 * s}" width="${bounds.width - 32 * s}" height="${bounds.height - 32 * s}" rx="${8 * s}"></rect>
     ${map.edges.map((edge) => renderEdge(map, edge, s)).join("")}
-    ${route.ok ? `<polyline class="route-line" points="${routePath}" style="stroke-width:${10 * s}px"></polyline>` : ""}
+    ${route.ok ? `<polyline class="route-line" points="${routePath}" stroke-width="${10 * s}"></polyline>` : ""}
     ${map.places.map((place) => renderPlace(map, place, s)).join("")}
     ${renderUserDot(map, s)}
   `;
@@ -412,20 +412,21 @@ function renderEdge(map, edge, s = 1) {
   const from = getNode(map, edge.from);
   const to = getNode(map, edge.to);
   const closed = isEdgeClosed(map, edge.from, edge.to) ? " closed" : "";
-  return `<line class="map-edge${closed}" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}" style="stroke-width:${8 * s}px"></line>`;
+  const dash = closed ? ` stroke-dasharray="${10 * s} ${8 * s}"` : "";
+  return `<line class="map-edge${closed}" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}" stroke-width="${8 * s}"${dash}></line>`;
 }
 
 function renderPlace(map, place, s = 1) {
   const node = getNode(map, place.nodeId);
   return `
-    <circle class="place-dot" cx="${node.x}" cy="${node.y}" r="${11 * s}" style="stroke-width:${3 * s}px"></circle>
-    <text class="place-label" x="${node.x + 15 * s}" y="${node.y + 6 * s}" style="font-size:${18 * s}px">${escapeHtml(place.label)}</text>
+    <circle class="place-dot" cx="${node.x}" cy="${node.y}" r="${11 * s}" stroke-width="${3 * s}"></circle>
+    <text class="place-label" x="${node.x + 15 * s}" y="${node.y + 6 * s}" font-size="${18 * s}">${escapeHtml(place.label)}</text>
   `;
 }
 
 function renderUserDot(map, s = 1) {
   const node = getNode(map, state.fromNodeId);
-  return `<circle class="user-dot" cx="${node.x}" cy="${node.y}" r="${13 * s}" style="stroke-width:${5 * s}px"></circle>`;
+  return `<circle class="user-dot" cx="${node.x}" cy="${node.y}" r="${13 * s}" stroke-width="${5 * s}"></circle>`;
 }
 
 function row(label, value) {
