@@ -444,6 +444,12 @@ function applyView() {
     elements.map.classList.toggle("lod-far", ratio > 1.7);
   }
 
+  // Re-place labels when the zoom level meaningfully changes (pan alone
+  // never affects label layout, so dragging stays free).
+  if (state.labelZoomW && Math.abs(Math.log(state.view.w / state.labelZoomW)) > 0.12) {
+    scheduleLabelRelayout();
+  }
+
   // Dynamic scale bar: pick a round distance that renders 60-160 px wide.
   if (elements.scalebar) {
     const widthPx = elements.map.clientWidth || 800;
@@ -534,18 +540,84 @@ function renderBlueprintLayers(map, s) {
 
   // X-ray shells: the building outline is bright, the interior is a faint
   // wash so the corridors, gates, and route inside stay fully readable.
-  const labels = [];
+  // (Names are drawn by the label engine, which handles collisions.)
   for (const entry of layers.terminals || []) {
-    const { points, name } = terminalShape(entry);
+    const { points } = terminalShape(entry);
     parts.push(`<polygon class="bp-terminal-xray" points="${pointsAttr(points)}" stroke-width="${2 * s}"></polygon>`);
-    if (name) {
-      const cx = points.reduce((sum, p) => sum + p[0], 0) / points.length;
-      const cy = points.reduce((sum, p) => sum + p[1], 0) / points.length;
-      labels.push(`<text class="bp-terminal-label" x="${Math.round(cx)}" y="${Math.round(cy)}" font-size="${24 * s}" text-anchor="middle">${escapeHtml(name)}</text>`);
-    }
   }
-  parts.push(...labels);
   return parts.join("");
+}
+
+// ---- Label engine ----------------------------------------------------------
+// Labels keep a constant on-screen size (like any professional map) and are
+// placed with a greedy priority pass: whatever would overlap something more
+// important is dropped, and more labels appear as you zoom in. Only this
+// layer re-renders on zoom — the geometry never does.
+
+function renderLabels() {
+  const layer = elements.map?.querySelector("#bp-label-layer");
+  if (!layer || !state.view || state.productionMapBlocked) return;
+  const map = state.map;
+  state.labelZoomW = state.view.w;
+
+  const pxPerWorld = (elements.map.clientWidth || 800) / state.view.w;
+  const worldSize = (px) => px / pxPerWorld;
+  const zoomRatio = state.focusW ? state.view.w / state.focusW : 1;
+
+  const candidates = [];
+
+  for (const entry of map.layers?.terminals || []) {
+    const { points, name } = terminalShape(entry);
+    if (!name || points.length < 3) continue;
+    const cx = points.reduce((sum, p) => sum + p[0], 0) / points.length;
+    const cy = points.reduce((sum, p) => sum + p[1], 0) / points.length;
+    candidates.push({ x: cx, y: cy, text: name, cls: "bp-terminal-label", size: worldSize(12), priority: 80, anchor: "middle" });
+  }
+
+  for (const place of map.places) {
+    const node = map.nodes.find((candidate) => candidate.id === place.nodeId);
+    if (!node || !place.label) continue;
+    const isDestination = place.nodeId === state.destinationNodeId && place.kind === "gate";
+    // Off-floor labels are pure clutter; amenities only earn space close-up.
+    if (offFloor(map, node.floorId) && !isDestination) continue;
+    if (place.kind === "amenity" && zoomRatio > 0.55) continue;
+    const priority = isDestination ? 1000
+      : place.kind === "security" ? 90
+        : place.kind === "arrival" ? 85
+          : place.kind === "gate" ? 60
+            : 20;
+    const size = worldSize(place.kind === "gate" ? 13 : 12);
+    candidates.push({
+      x: node.x + worldSize(9),
+      y: node.y + size * 0.36,
+      text: place.label,
+      cls: `bp-${place.kind}${isDestination ? " destination" : ""}`,
+      size,
+      priority,
+      anchor: "start"
+    });
+  }
+
+  candidates.sort((a, b) => b.priority - a.priority);
+  const kept = [];
+  for (const candidate of candidates) {
+    const width = candidate.text.length * candidate.size * 0.62 + candidate.size;
+    const x = candidate.anchor === "middle" ? candidate.x - width / 2 : candidate.x - candidate.size * 0.3;
+    const box = { x, y: candidate.y - candidate.size * 1.05, w: width, h: candidate.size * 1.45 };
+    const collides = kept.some((placed) =>
+      box.x < placed.box.x + placed.box.w && placed.box.x < box.x + box.w
+      && box.y < placed.box.y + placed.box.h && placed.box.y < box.y + box.h);
+    if (!collides) kept.push({ candidate, box });
+  }
+
+  layer.innerHTML = kept.map(({ candidate }) =>
+    `<text class="map-label ${candidate.cls}" x="${Math.round(candidate.x * 10) / 10}" y="${Math.round(candidate.y * 10) / 10}" font-size="${Math.round(candidate.size * 10) / 10}"${candidate.anchor === "middle" ? ` text-anchor="middle"` : ""}>${escapeHtml(candidate.text)}</text>`
+  ).join("");
+}
+
+function scheduleLabelRelayout() {
+  window.clearTimeout(state.labelTimer);
+  state.labelTimer = window.setTimeout(renderLabels, 120);
 }
 
 function renderFloorControls(map) {
@@ -659,7 +731,9 @@ function renderMap(route) {
     ${route.ok ? `<polyline class="route-halo" points="${routePath}" stroke-width="${20 * s}"></polyline><polyline class="route-line" points="${routePath}" stroke-width="${8 * s}"${route.approximate ? ` stroke-dasharray="${14 * s} ${12 * s}" opacity="0.85"` : ""}></polyline>` : ""}
     ${map.places.map((place) => renderPlace(map, place, s)).join("")}
     ${renderUserDot(map, s)}
+    <g id="bp-label-layer"></g>
   `;
+  renderLabels();
 }
 
 function renderEdge(map, edge, s = 1) {
@@ -680,7 +754,6 @@ function renderPlace(map, place, s = 1) {
   return `
     ${ring}
     <circle class="place-dot bp-${place.kind}${isDestination ? " destination" : ""}${ghost}" cx="${node.x}" cy="${node.y}" r="${place.kind === "gate" ? 10 * s : 7 * s}" stroke-width="${2.5 * s}"></circle>
-    <text class="place-label bp-${place.kind}${ghost}" x="${node.x + 14 * s}" y="${node.y + 6 * s}" font-size="${17 * s}">${escapeHtml(place.label)}</text>
   `;
 }
 
