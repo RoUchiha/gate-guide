@@ -131,12 +131,40 @@ function setManualStartByKind(kind) {
     addAlert(`This ${state.map.airportCode} map has no mapped ${kind === "arrival" ? "entrance" : kind} point yet. Use GPS or stay on the default start.`);
     return;
   }
+  setManualStartNode(node);
+}
+
+function setManualStartNode(node) {
   const reading = manualReading(node);
   state.fromNodeId = node.id;
   state.activeFloor = node.floorId || state.activeFloor;
   state.positionConfidence = confidenceForReading(reading);
   addAlert(`Start set to ${node.label || node.id}.`);
   render();
+}
+
+// Older bundles label every door "Entrance"; number them so each is a
+// distinct, pickable starting point.
+function uniquifyEntrances(map) {
+  const entrances = map.nodes
+    .filter((node) => node.kind === "arrival")
+    .sort((a, b) => a.y - b.y || a.x - b.x);
+  const counts = new Map();
+  for (const node of entrances) {
+    const base = node.label || "Entrance";
+    counts.set(base, (counts.get(base) || 0) + 1);
+  }
+  const running = new Map();
+  for (const node of entrances) {
+    const base = node.label || "Entrance";
+    if (counts.get(base) > 1) {
+      const index = (running.get(base) || 0) + 1;
+      running.set(base, index);
+      node.label = `${base} ${index}`;
+      const place = map.places.find((candidate) => candidate.nodeId === node.id);
+      if (place) place.label = node.label;
+    }
+  }
 }
 
 async function bootstrap() {
@@ -189,6 +217,7 @@ async function loadAirportMap(airportCode) {
     state.mapDiagnostics = payload.diagnostics || null;
     state.mapError = null;
     state.productionMapBlocked = false;
+    uniquifyEntrances(state.map);
     state.fromNodeId = defaultStartNode(state.map);
     state.activeFloor = null;
     if (elements.airportSelect && state.catalogCodes?.includes(state.map.airportCode)) {
@@ -494,8 +523,12 @@ function setupMapNavigation() {
   let drag = null;
   svg.addEventListener("pointerdown", (event) => {
     if (!state.view) return;
-    drag = { id: event.pointerId, x: event.clientX, y: event.clientY };
-    svg.setPointerCapture(event.pointerId);
+    drag = { id: event.pointerId, x: event.clientX, y: event.clientY, startX: event.clientX, startY: event.clientY, moved: 0 };
+    try {
+      svg.setPointerCapture(event.pointerId);
+    } catch {
+      // Capture is an optimization; taps and drags work without it.
+    }
     svg.classList.add("dragging");
   });
   svg.addEventListener("pointermove", (event) => {
@@ -503,15 +536,34 @@ function setupMapNavigation() {
     const rect = svg.getBoundingClientRect();
     state.view.x -= (event.clientX - drag.x) * (state.view.w / rect.width);
     state.view.y -= (event.clientY - drag.y) * (state.view.h / rect.height);
-    drag = { id: drag.id, x: event.clientX, y: event.clientY };
+    drag.moved += Math.hypot(event.clientX - drag.x, event.clientY - drag.y);
+    drag.x = event.clientX;
+    drag.y = event.clientY;
     applyView();
   });
-  const endDrag = () => {
+  const endDrag = (event) => {
+    // A press that never really moved is a tap: entrances and security set
+    // the start point, gates set the destination.
+    if (drag && event && drag.moved < 7) {
+      const target = document.elementFromPoint(event.clientX, event.clientY);
+      const dot = target?.closest?.(".place-dot.clickable");
+      const nodeId = dot?.dataset?.nodeId;
+      if (nodeId) {
+        const node = state.map.nodes.find((candidate) => candidate.id === nodeId);
+        if (node && dot.dataset.kind === "gate") {
+          state.destinationNodeId = node.id;
+          addAlert(`Destination set to gate ${node.label || node.id}.`);
+          render();
+        } else if (node) {
+          setManualStartNode(node);
+        }
+      }
+    }
     drag = null;
     svg.classList.remove("dragging");
   };
   svg.addEventListener("pointerup", endDrag);
-  svg.addEventListener("pointercancel", endDrag);
+  svg.addEventListener("pointercancel", () => endDrag(null));
   svg.addEventListener("dblclick", resetView);
 
   elements.resetView?.addEventListener("click", resetView);
@@ -526,6 +578,18 @@ function setupMapNavigation() {
 function renderBlueprintLayers(map, s) {
   const layers = map.layers || {};
   const parts = [];
+
+  // Geographic context: water, roads, and rail lines around the airport so
+  // travelers can orient themselves against the world outside.
+  for (const water of layers.water || []) {
+    parts.push(`<polygon class="bp-water" points="${pointsAttr(water)}"></polygon>`);
+  }
+  for (const road of layers.roads || []) {
+    parts.push(`<polyline class="bp-road" points="${pointsAttr(road)}" stroke-width="${6 * s}"></polyline>`);
+  }
+  for (const railway of layers.railways || []) {
+    parts.push(`<polyline class="bp-rail" points="${pointsAttr(railway)}" stroke-width="${2.2 * s}" stroke-dasharray="${14 * s} ${10 * s}"></polyline>`);
+  }
 
   for (const apron of layers.aprons || []) {
     parts.push(`<polygon class="bp-apron" points="${pointsAttr(apron)}" stroke-width="${1.2 * s}"></polygon>`);
@@ -751,9 +815,11 @@ function renderPlace(map, place, s = 1) {
   const ring = isDestination
     ? `<circle class="dest-ring" cx="${node.x}" cy="${node.y}" r="${20 * s}" stroke-width="${3 * s}"></circle>`
     : "";
+  const clickable = place.kind === "arrival" || place.kind === "security" || place.kind === "gate";
+  const hint = place.kind === "gate" ? "tap to set as destination" : "tap to start here";
   return `
     ${ring}
-    <circle class="place-dot bp-${place.kind}${isDestination ? " destination" : ""}${ghost}" cx="${node.x}" cy="${node.y}" r="${place.kind === "gate" ? 10 * s : 7 * s}" stroke-width="${2.5 * s}"></circle>
+    <circle class="place-dot bp-${place.kind}${isDestination ? " destination" : ""}${ghost}${clickable ? " clickable" : ""}" data-node-id="${escapeHtml(place.nodeId)}" data-kind="${place.kind}" cx="${node.x}" cy="${node.y}" r="${place.kind === "gate" ? 10 * s : 7 * s}" stroke-width="${2.5 * s}">${clickable ? `<title>${escapeHtml(place.label)} — ${hint}</title>` : ""}</circle>
   `;
 }
 

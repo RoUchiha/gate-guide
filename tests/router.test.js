@@ -24,6 +24,26 @@ test("returns no route when closures and accessibility block all paths", () => {
   assert.equal(route.ok, false);
 });
 
+test("routes always follow graph edges, never straight lines", () => {
+  const edgeSet = new Set();
+  for (const edge of demoAirportMap.edges) {
+    edgeSet.add(`${edge.from}::${edge.to}`);
+    edgeSet.add(`${edge.to}::${edge.from}`);
+  }
+  for (const from of ["arrival-a", "security-a"]) {
+    for (const to of ["gate-a12", "gate-a18", "gate-a21"]) {
+      const route = routeBetween(demoAirportMap, from, to);
+      assert.equal(route.ok, true);
+      for (let i = 1; i < route.path.length; i += 1) {
+        assert.ok(
+          edgeSet.has(`${route.path[i - 1]}::${route.path[i]}`),
+          `${route.path[i - 1]} -> ${route.path[i]} must be a mapped corridor edge`
+        );
+      }
+    }
+  }
+});
+
 test("nearestNode honors floor when available", () => {
   const node = nearestNode(demoAirportMap, { floorId: "F1", x: 758, y: 274 });
   assert.equal(node.id, "gate-a18");

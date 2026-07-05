@@ -73,6 +73,7 @@ const airports = catalogOnly ? [] : args.length ? args : CANDIDATE_AIRPORTS;
 function overpassQuery(iata) {
   return `[out:json][timeout:120];
 area["iata"="${iata}"]["aeroway"="aerodrome"]->.ap;
+wr["iata"="${iata}"]["aeroway"="aerodrome"]->.field;
 (
   node["aeroway"="gate"](area.ap);
   way["highway"~"^(footway|corridor|pedestrian|steps)$"](area.ap);
@@ -80,9 +81,12 @@ area["iata"="${iata}"]["aeroway"="aerodrome"]->.ap;
   node["barrier"="security_check"](area.ap);
   way["barrier"="security_check"](area.ap);
   node["entrance"~"^(main|yes)$"](area.ap);
+  node["highway"="elevator"](area.ap);
   node["amenity"~"^(restaurant|cafe|fast_food|bar)$"](area.ap);
   way["aeroway"~"^(terminal|apron|runway|taxiway)$"](area.ap);
   way["building"="terminal"](area.ap);
+  way["highway"~"^(motorway|trunk|primary)$"](around.field:1000);
+  way["railway"~"^(rail|light_rail|subway)$"](around.field:1000);
 );
 out body;
 >;
@@ -102,6 +106,9 @@ async function fetchOverpass(iata) {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         const payload = await response.json();
         if (!Array.isArray(payload.elements)) throw new Error("Malformed Overpass response");
+        if (!payload.elements.length && payload.remark) {
+          throw new Error(`Overpass limit hit: ${payload.remark.slice(0, 80)}`);
+        }
         return payload.elements;
       } catch (error) {
         lastError = error;
@@ -131,6 +138,7 @@ function classifyNode(tags = {}) {
   if (tags.aeroway === "gate") return "gate";
   if (tags.barrier === "security_check") return "security";
   if (tags.entrance === "main" || tags.entrance === "yes") return "arrival";
+  if (tags.highway === "elevator") return "elevator";
   if (["restaurant", "cafe", "fast_food", "bar"].includes(tags.amenity)) return "amenity";
   return "junction";
 }
@@ -172,11 +180,12 @@ function buildAirport(iata, elements) {
   }
 
   for (const way of ways) {
-    if (way.tags?.barrier === "security_check") continue;
-    // Blueprint geometry (terminals, aprons, runways, taxiways) is display
-    // data only — it must never enter the walk graph.
-    if (way.tags?.aeroway || way.tags?.building) continue;
-    if (way.tags?.indoor && !way.tags?.highway && way.tags.indoor !== "corridor") continue;
+    // Only genuine pedestrian ways enter the walk graph — display geometry
+    // (terminals, runways, roads, rail, water) is a whitelist away from ever
+    // becoming a "walkable" corridor.
+    const isWalkway = /^(footway|corridor|pedestrian|steps)$/.test(way.tags?.highway || "")
+      || ["corridor", "area", "yes"].includes(way.tags?.indoor || "");
+    if (!isWalkway || way.tags?.barrier === "security_check") continue;
     const accessible = way.tags?.highway !== "steps";
     const level = firstLevel(way.tags);
     let previous = null;
@@ -398,10 +407,22 @@ function extractLayers(elements, project) {
     return points.map(([x, y]) => [Math.round(x), Math.round(y)]);
   };
 
-  const layers = { terminals: [], aprons: [], runways: [], taxiways: [] };
+  const layers = { terminals: [], aprons: [], runways: [], taxiways: [], roads: [], railways: [], water: [] };
   for (const element of elements) {
     if (element.type !== "way" || !element.tags || !Array.isArray(element.nodes)) continue;
-    const { aeroway, building } = element.tags;
+    const { aeroway, building, highway, railway, natural } = element.tags;
+    if (/^(motorway|trunk|primary)$/.test(highway || "")) {
+      if (layers.roads.length < 120) layers.roads.push(wayPoints(element, 12));
+      continue;
+    }
+    if (/^(rail|light_rail|subway)$/.test(railway || "")) {
+      if (layers.railways.length < 60) layers.railways.push(wayPoints(element, 12));
+      continue;
+    }
+    if (natural === "water") {
+      if (layers.water.length < 15) layers.water.push(wayPoints(element, 15));
+      continue;
+    }
     if (aeroway === "terminal" || building === "terminal") {
       if (layers.terminals.length < 80) {
         layers.terminals.push({
@@ -423,9 +444,10 @@ function extractLayers(elements, project) {
     }
   }
   layers.terminals = layers.terminals.filter((terminal) => terminal.points.length >= 3);
-  for (const key of ["aprons", "taxiways"]) {
+  for (const key of ["aprons", "taxiways", "roads", "railways"]) {
     layers[key] = layers[key].filter((points) => points.length >= 2);
   }
+  layers.water = layers.water.filter((points) => points.length >= 3);
   layers.runways = layers.runways.filter((runway) => runway.points.length >= 2);
   return layers;
 }
@@ -451,6 +473,27 @@ function emitBundle(iata, kept, keptEdges, routing, gateStats, elements = []) {
           ? (vertex.tags.name || "Entrance")
           : (vertex.tags.name || "")
   }));
+
+  // Every entrance gets a unique, stable label so travelers can pick their
+  // exact starting door: OSM names/refs are kept, unnamed ones are numbered
+  // in geographic order.
+  const entranceNodes = nodes
+    .filter((node) => node.kind === "arrival")
+    .sort((a, b) => a.y - b.y || a.x - b.x);
+  const labelCounts = new Map();
+  for (const node of entranceNodes) {
+    const base = node.label && node.label !== "Entrance" ? node.label : "Entrance";
+    labelCounts.set(base, (labelCounts.get(base) || 0) + 1);
+  }
+  const running = new Map();
+  for (const node of entranceNodes) {
+    const base = node.label && node.label !== "Entrance" ? node.label : "Entrance";
+    if (base === "Entrance" || labelCounts.get(base) > 1) {
+      const index = (running.get(base) || 0) + 1;
+      running.set(base, index);
+      node.label = labelCounts.get(base) > 1 || base === "Entrance" ? `${base} ${index}` : base;
+    }
+  }
 
   const amenityNodes = nodes.filter((node) => node.kind === "amenity" && node.label);
   const places = [
