@@ -81,6 +81,8 @@ area["iata"="${iata}"]["aeroway"="aerodrome"]->.ap;
   way["barrier"="security_check"](area.ap);
   node["entrance"~"^(main|yes)$"](area.ap);
   node["amenity"~"^(restaurant|cafe|fast_food|bar)$"](area.ap);
+  way["aeroway"~"^(terminal|apron|runway|taxiway)$"](area.ap);
+  way["building"="terminal"](area.ap);
 );
 out body;
 >;
@@ -171,6 +173,9 @@ function buildAirport(iata, elements) {
 
   for (const way of ways) {
     if (way.tags?.barrier === "security_check") continue;
+    // Blueprint geometry (terminals, aprons, runways, taxiways) is display
+    // data only — it must never enter the walk graph.
+    if (way.tags?.aeroway || way.tags?.building) continue;
     if (way.tags?.indoor && !way.tags?.highway && way.tags.indoor !== "corridor") continue;
     const accessible = way.tags?.highway !== "steps";
     const level = firstLevel(way.tags);
@@ -297,7 +302,7 @@ function buildAirport(iata, elements) {
   }
 
   const keptEdges = [...edges.values()].filter((edge) => keptIds.has(edge.from) && keptIds.has(edge.to));
-  return emitBundle(iata, kept, keptEdges, "walkways", { gates: connectedGates, totalGates });
+  return emitBundle(iata, kept, keptEdges, "walkways", { gates: connectedGates, totalGates }, elements);
 }
 
 // Tier "approximate": real gate/security/entrance/amenity positions only, no
@@ -326,10 +331,100 @@ function buildGateLocations(iata, elements, walkwayReason) {
     return { rejected: `${walkwayReason}; only ${gates.length} mapped gate position(s)` };
   }
 
-  return emitBundle(iata, points, [], "approximate", { gates: gates.length, totalGates: gates.length });
+  return emitBundle(iata, points, [], "approximate", { gates: gates.length, totalGates: gates.length }, elements);
 }
 
-function emitBundle(iata, kept, keptEdges, routing, gateStats) {
+// Ramer-Douglas-Peucker polyline simplification (epsilon in meters).
+function rdpSimplify(points, epsilon) {
+  if (points.length < 3) return points;
+  const [start] = points;
+  const end = points[points.length - 1];
+  let maxDistance = 0;
+  let index = 0;
+  const dx = end[0] - start[0];
+  const dy = end[1] - start[1];
+  const length = Math.hypot(dx, dy) || 1;
+  for (let i = 1; i < points.length - 1; i += 1) {
+    const distance = Math.abs(dy * points[i][0] - dx * points[i][1] + end[0] * start[1] - end[1] * start[0]) / length;
+    if (distance > maxDistance) {
+      maxDistance = distance;
+      index = i;
+    }
+  }
+  if (maxDistance <= epsilon) return [start, end];
+  return [
+    ...rdpSimplify(points.slice(0, index + 1), epsilon).slice(0, -1),
+    ...rdpSimplify(points.slice(index), epsilon)
+  ];
+}
+
+// Blueprint display layers: real terminal footprints, aprons, runways, and
+// taxiways from OSM, simplified and projected into bundle-local meters.
+function extractLayers(elements, project) {
+  const coords = new Map();
+  for (const element of elements) {
+    if (element.type === "node" && element.lat !== undefined) coords.set(element.id, element);
+  }
+
+  const wayPoints = (way, epsilon) => {
+    let points = way.nodes
+      .map((id) => coords.get(id))
+      .filter(Boolean)
+      .map((node) => project(node.lat, node.lon));
+
+    // Closed rings collapse under plain RDP (start == end chord is zero
+    // length): drop the duplicate closing point, split the ring at the
+    // vertex farthest from the start, and simplify the two chains.
+    const isRing = points.length > 3
+      && points[0][0] === points[points.length - 1][0]
+      && points[0][1] === points[points.length - 1][1];
+    if (isRing) {
+      points = points.slice(0, -1);
+      let farIndex = 1;
+      let farDistance = 0;
+      for (let i = 1; i < points.length; i += 1) {
+        const d = Math.hypot(points[i][0] - points[0][0], points[i][1] - points[0][1]);
+        if (d > farDistance) {
+          farDistance = d;
+          farIndex = i;
+        }
+      }
+      const first = rdpSimplify(points.slice(0, farIndex + 1), epsilon);
+      const second = rdpSimplify([...points.slice(farIndex), points[0]], epsilon);
+      points = [...first.slice(0, -1), ...second.slice(0, -1)];
+    } else {
+      points = rdpSimplify(points, epsilon);
+    }
+    return points.map(([x, y]) => [Math.round(x), Math.round(y)]);
+  };
+
+  const layers = { terminals: [], aprons: [], runways: [], taxiways: [] };
+  for (const element of elements) {
+    if (element.type !== "way" || !element.tags || !Array.isArray(element.nodes)) continue;
+    const { aeroway, building } = element.tags;
+    if (aeroway === "terminal" || building === "terminal") {
+      if (layers.terminals.length < 80) layers.terminals.push(wayPoints(element, 2.5));
+    } else if (aeroway === "apron") {
+      if (layers.aprons.length < 30) layers.aprons.push(wayPoints(element, 10));
+    } else if (aeroway === "runway") {
+      if (layers.runways.length < 12) {
+        layers.runways.push({
+          points: wayPoints(element, 12),
+          width: Number(element.tags.width) || 45
+        });
+      }
+    } else if (aeroway === "taxiway") {
+      if (layers.taxiways.length < 160) layers.taxiways.push(wayPoints(element, 8));
+    }
+  }
+  for (const key of ["terminals", "aprons", "taxiways"]) {
+    layers[key] = layers[key].filter((points) => points.length >= 2);
+  }
+  layers.runways = layers.runways.filter((runway) => runway.points.length >= 2);
+  return layers;
+}
+
+function emitBundle(iata, kept, keptEdges, routing, gateStats, elements = []) {
   // Project lat/lon to local meters (equirectangular, y flipped for SVG).
   const latRef = kept.reduce((sum, v) => sum + v.lat, 0) / kept.length;
   const metersPerDegLon = 111320 * Math.cos((latRef * Math.PI) / 180);
@@ -361,6 +456,8 @@ function emitBundle(iata, kept, keptEdges, routing, gateStats) {
 
   const levels = [...new Set(nodes.map((node) => node.floorId))].sort();
   const version = `${new Date().toISOString().slice(0, 10)}-osm`;
+  const project = (lat, lon) => [(lon - minLon) * metersPerDegLon, (maxLat - lat) * 110540];
+  const layers = extractLayers(elements, project);
 
   return {
     map: {
@@ -374,12 +471,20 @@ function emitBundle(iata, kept, keptEdges, routing, gateStats) {
       routing,
       scale: { unit: "meter", pixelsPerMeter: 1 },
       floors: levels.map((id) => ({ id, label: `Level ${id.slice(1)}` })),
+      layers,
       nodes,
       edges: keptEdges,
       places,
       closures: []
     },
-    stats: { ...gateStats, nodes: nodes.length, edges: keptEdges.length, routing }
+    stats: {
+      ...gateStats,
+      nodes: nodes.length,
+      edges: keptEdges.length,
+      terminals: layers.terminals.length,
+      runways: layers.runways.length,
+      routing
+    }
   };
 }
 

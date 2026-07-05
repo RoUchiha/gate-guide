@@ -306,13 +306,102 @@ h2 {
   line-height: 1.4;
 }
 
+.map-viewport {
+  position: relative;
+  min-height: 360px;
+  display: grid;
+}
+
+/* The map is a blueprint: always deep blue, independent of the app theme. */
 .terminal-map {
   width: 100%;
   height: 100%;
   min-height: 360px;
-  border: 1px solid var(--line);
+  border: 1px solid #24425e;
   border-radius: 8px;
-  background: var(--map-bg);
+  background: #0d2137;
+  touch-action: none;
+  cursor: grab;
+}
+
+.terminal-map.dragging {
+  cursor: grabbing;
+}
+
+.map-legend {
+  position: absolute;
+  right: 12px;
+  bottom: 10px;
+  padding: 3px 10px;
+  border: 1px solid rgb(140 190 235 / 40%);
+  border-radius: 3px;
+  color: rgb(150 200 240 / 80%);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+
+.map-controls {
+  display: flex;
+  gap: 0.4rem;
+  justify-content: end;
+}
+
+.map-button {
+  padding: 0.5rem 0.65rem;
+  font-size: 0.8rem;
+}
+
+.map-button[aria-pressed="false"] {
+  opacity: 0.6;
+}
+
+.bp-paper {
+  fill: #0d2137;
+}
+
+.bp-grid-line {
+  stroke: rgb(120 170 220 / 14%);
+}
+
+.bp-apron {
+  fill: rgb(126 168 201 / 5%);
+  stroke: rgb(126 168 201 / 18%);
+}
+
+.bp-taxiway {
+  fill: none;
+  stroke: rgb(110 160 200 / 28%);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.bp-runway {
+  fill: none;
+  stroke: rgb(150 190 225 / 30%);
+  stroke-linecap: butt;
+}
+
+.bp-runway-center {
+  fill: none;
+  stroke: rgb(220 235 250 / 55%);
+}
+
+.bp-terminal-base {
+  fill: rgb(3 12 22 / 90%);
+}
+
+.bp-terminal-wall {
+  fill: #0e2942;
+  stroke: rgb(40 90 140 / 35%);
+}
+
+.bp-terminal-roof {
+  fill: #2c5a86;
+  stroke: #6fd0ff;
+  stroke-linejoin: round;
 }
 
 .terminal-wall {
@@ -323,41 +412,60 @@ h2 {
 
 /* Size-like properties (stroke-width, font-size) are set as SVG presentation
    attributes in app.js so they can scale with the loaded map's real-world
-   extent — CSS rules here would override those attributes. */
+   extent — CSS rules here would override those attributes. Colors are fixed
+   blueprint hues, not theme variables, because the map is always dark blue. */
 .map-edge {
-  stroke: var(--edge);
+  stroke: rgb(160 205 240 / 32%);
   stroke-linecap: round;
 }
 
 .map-edge.closed {
-  stroke: var(--edge-closed);
+  stroke: rgb(240 150 130 / 55%);
 }
 
-.route-line {
+.route-halo {
   fill: none;
-  stroke: var(--teal);
+  stroke: rgb(47 224 200 / 22%);
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
-.place-dot {
-  fill: var(--panel);
-  stroke: var(--navy);
+.route-line {
+  fill: none;
+  stroke: #2fe0c8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-@media (prefers-color-scheme: dark) {
-  .place-dot {
-    stroke: var(--teal);
-  }
+.user-halo {
+  fill: rgb(240 169 46 / 20%);
+}
+
+.place-dot {
+  fill: #0d2137;
+  stroke: #59c2ff;
+}
+
+.place-dot.bp-security {
+  stroke: #f0a92e;
+}
+
+.place-dot.bp-arrival {
+  stroke: #9fe870;
+}
+
+.place-dot.bp-amenity {
+  stroke: rgb(150 190 225 / 55%);
 }
 
 .place-label {
-  fill: var(--ink);
-  font-weight: 800;
+  fill: #dbe9f7;
+  font-weight: 700;
+  letter-spacing: 0.02em;
 }
 
 .user-dot {
-  fill: var(--amber);
+  fill: #f0a92e;
   stroke: #fff;
 }
 

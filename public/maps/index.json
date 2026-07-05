@@ -1,6 +1,6 @@
 {
   "source": "openstreetmap-indoor",
-  "version": "2026-07-03",
+  "version": "2026-07-05",
   "attribution": "Map data © OpenStreetMap contributors, ODbL",
   "entries": [
     {
@@ -79,8 +79,8 @@
       "airportCode": "AMS",
       "bundleUrl": "/maps/AMS.json",
       "format": "gate-guide-airport-map",
-      "version": "2026-07-03-osm",
-      "updatedAt": "2026-07-03T22:48:48.445Z",
+      "version": "2026-07-05-osm",
+      "updatedAt": "2026-07-05T04:34:46.978Z",
       "source": "openstreetmap-indoor",
       "routing": "walkways"
     },

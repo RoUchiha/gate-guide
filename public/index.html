@@ -79,11 +79,18 @@
             <h2 id="route-title" aria-live="polite">Route to gate</h2>
           </div>
           <div class="map-toolbar-side">
-            <select id="airport-select" aria-label="Choose airport"></select>
+            <div class="map-controls">
+              <select id="airport-select" aria-label="Choose airport"></select>
+              <button id="tilt-toggle" type="button" class="map-button" aria-pressed="true" title="Toggle 2.5D view">2.5D</button>
+              <button id="reset-view" type="button" class="map-button" title="Reset pan and zoom">Reset</button>
+            </div>
             <div class="route-meta" id="route-meta"></div>
           </div>
         </div>
-        <svg id="map" class="terminal-map" viewBox="0 0 920 560" role="img" aria-label="Scaled terminal map with route"></svg>
+        <div class="map-viewport">
+          <svg id="map" class="terminal-map" viewBox="0 0 920 560" role="img" aria-label="Blueprint airport map with route. Drag to pan, scroll to zoom."></svg>
+          <div class="map-legend" id="map-legend"></div>
+        </div>
         <p class="map-attribution" id="map-attribution"></p>
         <ol id="route-steps" class="route-steps"></ol>
       </section>

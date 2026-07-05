@@ -16,6 +16,9 @@ const state = {
   destinationNodeId: "gate-a18",
   positionConfidence: "manual",
   accessible: false,
+  tilt: true,
+  view: null,
+  viewAirport: null,
   alerts: ["Checking live provider configuration."]
 };
 
@@ -38,6 +41,9 @@ const elements = {
   mapTitle: document.querySelector("#map-title"),
   airportSelect: document.querySelector("#airport-select"),
   mapAttribution: document.querySelector("#map-attribution"),
+  mapLegend: document.querySelector("#map-legend"),
+  tiltToggle: document.querySelector("#tilt-toggle"),
+  resetView: document.querySelector("#reset-view"),
   locateSecurity: document.querySelector("#locate-security"),
   locateArrival: document.querySelector("#locate-arrival"),
   useGps: document.querySelector("#use-gps")
@@ -132,6 +138,7 @@ function setManualStartByKind(kind) {
 }
 
 async function bootstrap() {
+  setupMapNavigation();
   await Promise.all([loadProviderStatus(), loadAirportCatalog()]);
   await loadAirportMap(state.catalogCodes?.[0] || "DFW");
   render();
@@ -365,17 +372,132 @@ function renderAlerts() {
   elements.alerts.innerHTML = state.alerts.map((alert) => `<li>${escapeHtml(alert)}</li>`).join("");
 }
 
-function mapBounds(map, padding = 70) {
-  const xs = map.nodes.map((node) => node.x);
-  const ys = map.nodes.map((node) => node.y);
+// ---- Blueprint 2.5D projection and navigation -----------------------------
+
+const TILT_FACTOR = 0.62;
+const TERMINAL_HEIGHT_METERS = 34;
+
+function proj(x, y, z = 0) {
+  return state.tilt ? [x, y * TILT_FACTOR - z] : [x, y];
+}
+
+function projPoints(points, z = 0) {
+  return points
+    .map(([x, y]) => proj(x, y, z).map((v) => Math.round(v * 10) / 10).join(","))
+    .join(" ");
+}
+
+function projectedBounds(map, padding = 70) {
+  const points = map.nodes.map((node) => proj(node.x, node.y));
+  for (const polygon of map.layers?.terminals || []) {
+    for (const point of polygon) points.push(proj(point[0], point[1]));
+  }
+  const xs = points.map((point) => point[0]);
+  const ys = points.map((point) => point[1]);
   const minX = Math.min(...xs) - padding;
-  const minY = Math.min(...ys) - padding;
+  const minY = Math.min(...ys) - padding - (state.tilt ? TERMINAL_HEIGHT_METERS : 0);
   return {
     minX,
     minY,
     width: Math.max(...xs) + padding - minX,
     height: Math.max(...ys) + padding - minY
   };
+}
+
+function applyView() {
+  if (!state.view) return;
+  elements.map.setAttribute("viewBox", `${state.view.x} ${state.view.y} ${state.view.w} ${state.view.h}`);
+}
+
+function resetView() {
+  state.view = null;
+  render();
+}
+
+function setupMapNavigation() {
+  const svg = elements.map;
+  if (!svg) return;
+
+  svg.addEventListener("wheel", (event) => {
+    if (!state.view) return;
+    event.preventDefault();
+    const rect = svg.getBoundingClientRect();
+    const fx = (event.clientX - rect.left) / rect.width;
+    const fy = (event.clientY - rect.top) / rect.height;
+    const factor = event.deltaY > 0 ? 1.18 : 1 / 1.18;
+    const width = Math.min(Math.max(state.view.w * factor, 40), 60000);
+    const height = width * (state.view.h / state.view.w);
+    state.view.x += (state.view.w - width) * fx;
+    state.view.y += (state.view.h - height) * fy;
+    state.view.w = width;
+    state.view.h = height;
+    applyView();
+  }, { passive: false });
+
+  let drag = null;
+  svg.addEventListener("pointerdown", (event) => {
+    if (!state.view) return;
+    drag = { id: event.pointerId, x: event.clientX, y: event.clientY };
+    svg.setPointerCapture(event.pointerId);
+    svg.classList.add("dragging");
+  });
+  svg.addEventListener("pointermove", (event) => {
+    if (!drag || event.pointerId !== drag.id || !state.view) return;
+    const rect = svg.getBoundingClientRect();
+    state.view.x -= (event.clientX - drag.x) * (state.view.w / rect.width);
+    state.view.y -= (event.clientY - drag.y) * (state.view.h / rect.height);
+    drag = { id: drag.id, x: event.clientX, y: event.clientY };
+    applyView();
+  });
+  const endDrag = () => {
+    drag = null;
+    svg.classList.remove("dragging");
+  };
+  svg.addEventListener("pointerup", endDrag);
+  svg.addEventListener("pointercancel", endDrag);
+  svg.addEventListener("dblclick", resetView);
+
+  elements.resetView?.addEventListener("click", resetView);
+  elements.tiltToggle?.addEventListener("click", () => {
+    state.tilt = !state.tilt;
+    elements.tiltToggle.setAttribute("aria-pressed", String(state.tilt));
+    state.view = null;
+    render();
+  });
+}
+
+function renderBlueprintLayers(map, s) {
+  const layers = map.layers || {};
+  const parts = [];
+
+  for (const apron of layers.aprons || []) {
+    parts.push(`<polygon class="bp-apron" points="${projPoints(apron)}" stroke-width="${1.2 * s}"></polygon>`);
+  }
+  for (const taxiway of layers.taxiways || []) {
+    parts.push(`<polyline class="bp-taxiway" points="${projPoints(taxiway)}" stroke-width="12"></polyline>`);
+  }
+  for (const runway of layers.runways || []) {
+    parts.push(`<polyline class="bp-runway" points="${projPoints(runway.points)}" stroke-width="${runway.width}"></polyline>`);
+    parts.push(`<polyline class="bp-runway-center" points="${projPoints(runway.points)}" stroke-width="${1.6 * s}" stroke-dasharray="30 22"></polyline>`);
+  }
+
+  const terminals = layers.terminals || [];
+  for (const terminal of terminals) {
+    parts.push(`<polygon class="bp-terminal-base" points="${projPoints(terminal)}"></polygon>`);
+  }
+  if (state.tilt) {
+    // Stacked copies from ground to roof read as extruded walls.
+    for (let step = 1; step <= 4; step += 1) {
+      const z = (TERMINAL_HEIGHT_METERS * step) / 4;
+      for (const terminal of terminals) {
+        parts.push(`<polygon class="bp-terminal-wall" points="${projPoints(terminal, z)}" stroke-width="${0.8 * s}"></polygon>`);
+      }
+    }
+  }
+  for (const terminal of terminals) {
+    parts.push(`<polygon class="bp-terminal-roof" points="${projPoints(terminal, state.tilt ? TERMINAL_HEIGHT_METERS : 0)}" stroke-width="${1.6 * s}"></polygon>`);
+  }
+  return parts.join("");
 }
 
 function renderMap(route) {
@@ -419,47 +541,81 @@ function renderMap(route) {
 
   elements.routeSteps.innerHTML = route.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("");
 
-  const bounds = mapBounds(map);
-  elements.map.setAttribute("viewBox", `${bounds.minX} ${bounds.minY} ${bounds.width} ${bounds.height}`);
+  const bounds = projectedBounds(map);
+  // Initial view frames the gate/terminal area; the wider airfield
+  // (runways, taxiways) is there to discover by zooming out.
+  const focusPoints = map.nodes.map((node) => proj(node.x, node.y));
+  const fxs = focusPoints.map((point) => point[0]);
+  const fys = focusPoints.map((point) => point[1]);
+  const focus = {
+    x: Math.min(...fxs) - 90,
+    y: Math.min(...fys) - 90 - (state.tilt ? TERMINAL_HEIGHT_METERS : 0),
+    w: Math.max(...fxs) - Math.min(...fxs) + 180,
+    h: Math.max(...fys) - Math.min(...fys) + 180
+  };
+  if (!state.view || state.viewAirport !== map.airportCode) {
+    state.view = focus;
+    state.viewAirport = map.airportCode;
+  }
+  applyView();
 
   // Stroke widths, dot radii, and label sizes are expressed in viewBox units,
-  // so real-world bundles (thousands of meters wide) need everything scaled
-  // up relative to the 920-unit demo map the styles were designed around.
-  const s = Math.max(0.4, bounds.width / 920);
+  // scaled relative to the focused terminal area (not the full airfield) so
+  // gates stay readable at the default zoom.
+  const s = Math.max(0.4, focus.w / 920);
 
   if (elements.mapAttribution) {
     elements.mapAttribution.textContent = state.map.attribution || "";
   }
+  if (elements.mapLegend) {
+    elements.mapLegend.textContent = `${map.airportCode} · gate guide blueprint · drag to pan · scroll to zoom`;
+  }
 
-  const routePath = routeNodes.map((node) => `${node.x},${node.y}`).join(" ");
+  // The blueprint paper and grid extend well past the data so panning never
+  // reveals a hard edge.
+  const gx = bounds.minX - bounds.width;
+  const gy = bounds.minY - bounds.height;
+  const gw = bounds.width * 3;
+  const gh = bounds.height * 3;
+
+  const routePath = projPoints(routeNodes.map((node) => [node.x, node.y]));
   elements.map.innerHTML = `
-    <rect class="terminal-wall" x="${bounds.minX + 16 * s}" y="${bounds.minY + 16 * s}" width="${bounds.width - 32 * s}" height="${bounds.height - 32 * s}" rx="${8 * s}"></rect>
+    <defs>
+      <pattern id="bp-grid" width="100" height="100" patternUnits="userSpaceOnUse">
+        <path d="M 100 0 L 0 0 0 100" fill="none" class="bp-grid-line" stroke-width="${0.7 * s}"></path>
+      </pattern>
+    </defs>
+    <rect class="bp-paper" x="${gx}" y="${gy}" width="${gw}" height="${gh}"></rect>
+    <rect fill="url(#bp-grid)" x="${gx}" y="${gy}" width="${gw}" height="${gh}"></rect>
+    ${renderBlueprintLayers(map, s)}
     ${map.edges.map((edge) => renderEdge(map, edge, s)).join("")}
-    ${route.ok ? `<polyline class="route-line" points="${routePath}" stroke-width="${10 * s}"${route.approximate ? ` stroke-dasharray="${14 * s} ${12 * s}" opacity="0.75"` : ""}></polyline>` : ""}
+    ${route.ok ? `<polyline class="route-halo" points="${routePath}" stroke-width="${20 * s}"></polyline><polyline class="route-line" points="${routePath}" stroke-width="${8 * s}"${route.approximate ? ` stroke-dasharray="${14 * s} ${12 * s}" opacity="0.85"` : ""}></polyline>` : ""}
     ${map.places.map((place) => renderPlace(map, place, s)).join("")}
     ${renderUserDot(map, s)}
   `;
 }
 
 function renderEdge(map, edge, s = 1) {
-  const from = getNode(map, edge.from);
-  const to = getNode(map, edge.to);
+  const from = proj(getNode(map, edge.from).x, getNode(map, edge.from).y);
+  const to = proj(getNode(map, edge.to).x, getNode(map, edge.to).y);
   const closed = isEdgeClosed(map, edge.from, edge.to) ? " closed" : "";
   const dash = closed ? ` stroke-dasharray="${10 * s} ${8 * s}"` : "";
-  return `<line class="map-edge${closed}" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}" stroke-width="${8 * s}"${dash}></line>`;
+  return `<line class="map-edge${closed}" x1="${from[0]}" y1="${from[1]}" x2="${to[0]}" y2="${to[1]}" stroke-width="${5 * s}"${dash}></line>`;
 }
 
 function renderPlace(map, place, s = 1) {
   const node = getNode(map, place.nodeId);
+  const [x, y] = proj(node.x, node.y);
   return `
-    <circle class="place-dot" cx="${node.x}" cy="${node.y}" r="${11 * s}" stroke-width="${3 * s}"></circle>
-    <text class="place-label" x="${node.x + 15 * s}" y="${node.y + 6 * s}" font-size="${18 * s}">${escapeHtml(place.label)}</text>
+    <circle class="place-dot bp-${place.kind}" cx="${x}" cy="${y}" r="${place.kind === "gate" ? 10 * s : 8 * s}" stroke-width="${2.5 * s}"></circle>
+    <text class="place-label" x="${x + 14 * s}" y="${y + 6 * s}" font-size="${17 * s}">${escapeHtml(place.label)}</text>
   `;
 }
 
 function renderUserDot(map, s = 1) {
   const node = getNode(map, state.fromNodeId);
-  return `<circle class="user-dot" cx="${node.x}" cy="${node.y}" r="${13 * s}" stroke-width="${5 * s}"></circle>`;
+  const [x, y] = proj(node.x, node.y);
+  return `<circle class="user-halo" cx="${x}" cy="${y}" r="${24 * s}"></circle><circle class="user-dot" cx="${x}" cy="${y}" r="${13 * s}" stroke-width="${5 * s}"></circle>`;
 }
 
 function row(label, value) {
