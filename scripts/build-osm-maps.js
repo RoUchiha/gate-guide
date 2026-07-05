@@ -403,7 +403,12 @@ function extractLayers(elements, project) {
     if (element.type !== "way" || !element.tags || !Array.isArray(element.nodes)) continue;
     const { aeroway, building } = element.tags;
     if (aeroway === "terminal" || building === "terminal") {
-      if (layers.terminals.length < 80) layers.terminals.push(wayPoints(element, 2.5));
+      if (layers.terminals.length < 80) {
+        layers.terminals.push({
+          points: wayPoints(element, 2.5),
+          name: element.tags.name || element.tags.ref || null
+        });
+      }
     } else if (aeroway === "apron") {
       if (layers.aprons.length < 30) layers.aprons.push(wayPoints(element, 10));
     } else if (aeroway === "runway") {
@@ -417,7 +422,8 @@ function extractLayers(elements, project) {
       if (layers.taxiways.length < 160) layers.taxiways.push(wayPoints(element, 8));
     }
   }
-  for (const key of ["terminals", "aprons", "taxiways"]) {
+  layers.terminals = layers.terminals.filter((terminal) => terminal.points.length >= 3);
+  for (const key of ["aprons", "taxiways"]) {
     layers[key] = layers[key].filter((points) => points.length >= 2);
   }
   layers.runways = layers.runways.filter((runway) => runway.points.length >= 2);

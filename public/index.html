@@ -26,7 +26,7 @@
             <p class="eyebrow">Gate Guide</p>
             <h1>Live gate guidance</h1>
           </div>
-          <span class="status-pill" id="provider-health" role="status" aria-live="polite">Checking providers</span>
+          <span class="status-pill" id="provider-health" role="status" aria-live="polite">Connecting…</span>
         </div>
 
         <form id="flight-form" class="flight-form">
@@ -66,8 +66,8 @@
           <button id="join-wifi" type="button">Connect to airport Wi-Fi</button>
         </section>
 
-        <section class="info-panel" aria-label="Alerts">
-          <h2>Alerts</h2>
+        <section class="info-panel" aria-label="Updates">
+          <h2>Updates</h2>
           <ul id="alerts" class="alerts" aria-live="polite"></ul>
         </section>
       </section>
@@ -89,6 +89,7 @@
         </div>
         <div class="map-viewport">
           <svg id="map" class="terminal-map" viewBox="0 0 920 560" role="img" aria-label="Blueprint airport map with route. Drag to pan, scroll to zoom."></svg>
+          <div class="map-scalebar" id="map-scalebar"></div>
           <div class="map-legend" id="map-legend"></div>
         </div>
         <p class="map-attribution" id="map-attribution"></p>

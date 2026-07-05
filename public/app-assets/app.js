@@ -2,7 +2,7 @@ import { demoAirportMap, wifiProfileFor } from "./sample-data.js";
 import { ApiFlightProvider, summarizeConnectionRisk } from "./flight-provider.js";
 import { confidenceForReading, browserGpsReading, manualReading, projectOutdoorGpsToTerminal } from "./positioning.js";
 import { connectToWifi, wifiCapability } from "./wifi-assistant.js";
-import { getNode, isEdgeClosed, nearestNode, placeToNode, routeBetween } from "./router.js";
+import { formatDistance, getNode, isEdgeClosed, nearestNode, placeToNode, routeBetween } from "./router.js";
 
 const state = {
   map: demoAirportMap,
@@ -19,7 +19,7 @@ const state = {
   view: null,
   viewAirport: null,
   activeFloor: null,
-  alerts: ["Checking live provider configuration."]
+  alerts: []
 };
 
 const elements = {
@@ -42,6 +42,7 @@ const elements = {
   airportSelect: document.querySelector("#airport-select"),
   mapAttribution: document.querySelector("#map-attribution"),
   mapLegend: document.querySelector("#map-legend"),
+  scalebar: document.querySelector("#map-scalebar"),
   floorControls: document.querySelector("#floor-controls"),
   resetView: document.querySelector("#reset-view"),
   locateSecurity: document.querySelector("#locate-security"),
@@ -55,7 +56,6 @@ bootstrap();
 
 elements.form.addEventListener("submit", async (event) => {
   event.preventDefault();
-  addAlert("Resolving flight with configured provider.");
   setTracking(true);
   try {
     const itinerary = await state.provider.resolveFlight({
@@ -194,15 +194,10 @@ async function loadAirportMap(airportCode) {
     if (elements.airportSelect && state.catalogCodes?.includes(state.map.airportCode)) {
       elements.airportSelect.value = state.map.airportCode;
     }
-    addAlert(payload.providerMode === "live"
-      ? `Loaded live ${state.map.airportCode} map bundle (${state.map.version}).`
-      : payload.providerMode === "production"
-        ? `Loaded production ${state.map.airportCode} map bundle (${state.map.version}).`
-        : `Using demo ${state.map.airportCode} map bundle. ${payload.warnings?.[0] || ""}`.trim());
+    addAlert(`${state.map.airportCode} map loaded.`);
     if (state.map.routing === "approximate") {
-      addAlert(`${state.map.airportCode} has mapped gate positions only — guidance is approximate, follow airport signage.`);
+      addAlert(`${state.map.airportCode} guidance is approximate — follow airport signage to confirm.`);
     }
-    for (const warning of payload.diagnostics?.warnings || []) addAlert(`Map warning: ${warning}`);
   } catch (error) {
     state.mapDiagnostics = error.diagnostics || null;
     state.mapError = error.message;
@@ -228,7 +223,11 @@ async function applyItinerary(itinerary) {
   state.destinationNodeId = resolveDestinationNode(activeLeg.gate);
   const risk = summarizeConnectionRisk(itinerary);
 
-  for (const warning of itinerary.warnings || []) addAlert(warning);
+  for (const warning of itinerary.warnings || []) {
+    addAlert(warning.includes("gate assignment")
+      ? "The airline hasn't published a gate for this flight yet."
+      : warning);
+  }
   if (previousGate && previousGate !== activeLeg.gate) {
     addAlert(`Gate changed from ${previousGate} to ${activeLeg.gate}.`);
   }
@@ -302,15 +301,27 @@ function currentRoute() {
       confidence: "approximate",
       steps: [
         `Follow airport signage toward gate ${to.label || state.map.airportCode}.`,
-        `Approximate walk ${Math.round(meters)} m, about ${etaMinutes} min (straight-line estimate + typical detour).`,
-        "This airport has real mapped gate positions but no indoor walkway data yet, so turn-by-turn routing is not available."
+        `Approximate walk ${formatDistance(meters)}, about ${etaMinutes} min.`,
+        "Turn-by-turn directions aren't available at this airport yet — gate positions shown are exact."
       ]
     };
   }
 
+  // A landside start (entrance / arrival hall) must pass through security
+  // before reaching any gate.
+  const startNode = state.map.nodes.find((node) => node.id === state.fromNodeId);
+  let via;
+  if (startNode?.kind === "arrival") {
+    const security = state.map.nodes
+      .filter((node) => node.kind === "security")
+      .sort((a, b) => Math.hypot(a.x - startNode.x, a.y - startNode.y) - Math.hypot(b.x - startNode.x, b.y - startNode.y))[0];
+    via = security?.id;
+  }
+
   return routeBetween(state.map, state.fromNodeId, state.destinationNodeId, {
     accessible: state.accessible,
-    positionConfidence: state.positionConfidence
+    positionConfidence: state.positionConfidence,
+    via
   });
 }
 
@@ -326,11 +337,16 @@ function renderProviderStatus() {
   if (!elements.providerHealth) return;
   const status = state.providerStatus;
   if (!status) {
-    elements.providerHealth.textContent = "Checking providers";
+    elements.providerHealth.textContent = "Connecting…";
     return;
   }
-  const mode = status.productionMapsRequired ? "production required" : "fallback allowed";
-  elements.providerHealth.textContent = `Flight: ${status.flight} | Map: ${status.airportMap} (${mode})`;
+  const flightLive = ["flightaware-aeroapi", "live-adsb", "opensky-network"].includes(status.flight);
+  const mapLive = ["bundled-osm-maps", "production-map-catalog", "production-map-bundles"].includes(status.airportMap);
+  const label = flightLive && mapLive ? "Live data" : flightLive || mapLive ? "Partial live data" : "Demo mode";
+  elements.providerHealth.textContent = label;
+  elements.providerHealth.classList.toggle("degraded", !(flightLive && mapLive));
+  // Technical detail stays available on hover without cluttering the UI.
+  elements.providerHealth.title = `Flight provider: ${status.flight} · Map source: ${status.airportMap}`;
 }
 
 function renderFlight() {
@@ -340,35 +356,30 @@ function renderFlight() {
     return;
   }
 
+  const updated = new Date(leg.fetchedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
   elements.flightCard.innerHTML = [
-    row("Flight", `${leg.airline} ${leg.flightNumber}`),
-    row("Route", `${leg.origin || "unknown"} to ${leg.destination || "unknown"}`),
-    row("Terminal / gate", `${leg.terminal || "n/a"} / ${leg.gate || "not published"}`),
-    row("Status", leg.status),
-    leg.position ? row("Live position", `${leg.position.lat.toFixed(2)}, ${leg.position.lon.toFixed(2)}`) : "",
-    row("Provider mode", state.itinerary.providerMode || "demo"),
-    row("Data source", `${leg.source}, ${new Date(leg.fetchedAt).toLocaleTimeString()}`)
+    row("Flight", `${leg.airlineName || leg.airline} ${leg.flightNumber}`),
+    row("Route", `${leg.origin || "—"} → ${leg.destination || "—"}`),
+    row("Terminal / gate", `${leg.terminal || "—"} / ${leg.gate || "not published yet"}`),
+    row("Status", humanizeStatus(leg.status)),
+    row("Updated", `${updated}${state.itinerary.providerMode === "live" ? " · live" : ""}`)
   ].join("");
+}
+
+function humanizeStatus(status) {
+  const cleaned = String(status || "")
+    .replace(/\s*\(live ADS-B[^)]*\)/, "")
+    .replace(/\s*\(route on record, live ADS-B\)/, "")
+    .trim() || "status unavailable";
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
 }
 
 function renderWifi() {
   const profile = wifiProfileFor(state.map.airportCode);
-  const capability = wifiCapability();
   elements.wifiCard.innerHTML = [
-    row("Airport SSID", profile.ssid),
-    row("Map source", state.productionMapBlocked ? "production map unavailable" : `${state.map.source || "unknown"} (${state.map.version})`),
-    row("Map coverage", coverageSummary()),
-    row("Mode", capability.canAutoJoin ? "Native auto-join available" : "Manual web assist"),
-    row("Security", profile.security),
+    row("Network", profile.ssid),
     `<p>${profile.instructions.join(" ")}</p>`
   ].join("");
-}
-
-function coverageSummary() {
-  if (state.productionMapBlocked) return "blocked";
-  const counts = state.mapDiagnostics?.counts;
-  if (!counts) return "pending";
-  return `${counts.gates} gates, ${counts.nodes} nodes, ${counts.edges} edges`;
 }
 
 function renderAlerts() {
@@ -381,10 +392,16 @@ function pointsAttr(points) {
   return points.map(([x, y]) => `${x},${y}`).join(" ");
 }
 
+// Terminal entries are {points, name} in current bundles; older bundles used
+// bare point arrays.
+function terminalShape(entry) {
+  return Array.isArray(entry) ? { points: entry, name: null } : entry;
+}
+
 function projectedBounds(map, padding = 70) {
   const points = map.nodes.map((node) => [node.x, node.y]);
-  for (const polygon of map.layers?.terminals || []) {
-    for (const point of polygon) points.push(point);
+  for (const entry of map.layers?.terminals || []) {
+    for (const point of terminalShape(entry).points) points.push(point);
   }
   const xs = points.map((point) => point[0]);
   const ys = points.map((point) => point[1]);
@@ -417,6 +434,30 @@ function offFloor(map, floorId) {
 function applyView() {
   if (!state.view) return;
   elements.map.setAttribute("viewBox", `${state.view.x} ${state.view.y} ${state.view.w} ${state.view.h}`);
+
+  // Level of detail follows zoom: amenity labels appear close-up, all labels
+  // retire when the whole airfield is in frame. Pure CSS class flips — the
+  // geometry is never re-rendered while navigating.
+  if (state.focusW) {
+    const ratio = state.view.w / state.focusW;
+    elements.map.classList.toggle("lod-near", ratio < 0.55);
+    elements.map.classList.toggle("lod-far", ratio > 1.7);
+  }
+
+  // Dynamic scale bar: pick a round distance that renders 60-160 px wide.
+  if (elements.scalebar) {
+    const widthPx = elements.map.clientWidth || 800;
+    const metersPerPx = state.view.w / widthPx;
+    const nice = [10, 25, 50, 100, 250, 500, 1000, 2500, 5000]
+      .find((candidate) => candidate / metersPerPx >= 60 && candidate / metersPerPx <= 180);
+    if (nice) {
+      elements.scalebar.style.width = `${Math.round(nice / metersPerPx)}px`;
+      elements.scalebar.textContent = nice >= 1000 ? `${nice / 1000} km` : `${nice} m`;
+      elements.scalebar.style.display = "block";
+    } else {
+      elements.scalebar.style.display = "none";
+    }
+  }
 }
 
 function resetView() {
@@ -493,9 +534,17 @@ function renderBlueprintLayers(map, s) {
 
   // X-ray shells: the building outline is bright, the interior is a faint
   // wash so the corridors, gates, and route inside stay fully readable.
-  for (const terminal of layers.terminals || []) {
-    parts.push(`<polygon class="bp-terminal-xray" points="${pointsAttr(terminal)}" stroke-width="${2 * s}"></polygon>`);
+  const labels = [];
+  for (const entry of layers.terminals || []) {
+    const { points, name } = terminalShape(entry);
+    parts.push(`<polygon class="bp-terminal-xray" points="${pointsAttr(points)}" stroke-width="${2 * s}"></polygon>`);
+    if (name) {
+      const cx = points.reduce((sum, p) => sum + p[0], 0) / points.length;
+      const cy = points.reduce((sum, p) => sum + p[1], 0) / points.length;
+      labels.push(`<text class="bp-terminal-label" x="${Math.round(cx)}" y="${Math.round(cy)}" font-size="${24 * s}" text-anchor="middle">${escapeHtml(name)}</text>`);
+    }
   }
+  parts.push(...labels);
   return parts.join("");
 }
 
@@ -547,7 +596,7 @@ function renderMap(route) {
       : `Route to gate ${activeGate}`
     : "No route available";
   elements.routeMeta.innerHTML = route.ok
-    ? `${route.approximate ? "~" : ""}${Math.round(route.meters)} m<br>${route.etaMinutes} min<br>${route.confidence} confidence`
+    ? `${route.approximate ? "≈ " : ""}${formatDistance(route.meters)}<br>${route.etaMinutes} min walk${route.approximate ? "<br>approximate" : ""}`
     : escapeHtml(route.reason);
 
   elements.routeSteps.innerHTML = route.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("");
@@ -563,8 +612,9 @@ function renderMap(route) {
     w: Math.max(...fxs) - Math.min(...fxs) + 180,
     h: Math.max(...fys) - Math.min(...fys) + 180
   };
+  state.focusW = focus.w;
   if (!state.view || state.viewAirport !== map.airportCode) {
-    state.view = focus;
+    state.view = { ...focus };
     state.viewAirport = map.airportCode;
   }
   applyView();
@@ -623,9 +673,14 @@ function renderEdge(map, edge, s = 1) {
 function renderPlace(map, place, s = 1) {
   const node = getNode(map, place.nodeId);
   const ghost = offFloor(map, node.floorId);
+  const isDestination = place.nodeId === state.destinationNodeId && place.kind === "gate";
+  const ring = isDestination
+    ? `<circle class="dest-ring" cx="${node.x}" cy="${node.y}" r="${20 * s}" stroke-width="${3 * s}"></circle>`
+    : "";
   return `
-    <circle class="place-dot bp-${place.kind}${ghost}" cx="${node.x}" cy="${node.y}" r="${place.kind === "gate" ? 10 * s : 8 * s}" stroke-width="${2.5 * s}"></circle>
-    <text class="place-label${ghost}" x="${node.x + 14 * s}" y="${node.y + 6 * s}" font-size="${17 * s}">${escapeHtml(place.label)}</text>
+    ${ring}
+    <circle class="place-dot bp-${place.kind}${isDestination ? " destination" : ""}${ghost}" cx="${node.x}" cy="${node.y}" r="${place.kind === "gate" ? 10 * s : 7 * s}" stroke-width="${2.5 * s}"></circle>
+    <text class="place-label bp-${place.kind}${ghost}" x="${node.x + 14 * s}" y="${node.y + 6 * s}" font-size="${17 * s}">${escapeHtml(place.label)}</text>
   `;
 }
 
