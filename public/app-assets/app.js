@@ -16,9 +16,9 @@ const state = {
   destinationNodeId: "gate-a18",
   positionConfidence: "manual",
   accessible: false,
-  tilt: true,
   view: null,
   viewAirport: null,
+  activeFloor: null,
   alerts: ["Checking live provider configuration."]
 };
 
@@ -42,7 +42,7 @@ const elements = {
   airportSelect: document.querySelector("#airport-select"),
   mapAttribution: document.querySelector("#map-attribution"),
   mapLegend: document.querySelector("#map-legend"),
-  tiltToggle: document.querySelector("#tilt-toggle"),
+  floorControls: document.querySelector("#floor-controls"),
   resetView: document.querySelector("#reset-view"),
   locateSecurity: document.querySelector("#locate-security"),
   locateArrival: document.querySelector("#locate-arrival"),
@@ -109,6 +109,7 @@ elements.useGps.addEventListener("click", () => {
       const reading = projectOutdoorGpsToTerminal(browserGpsReading(position), state.map);
       const node = nearestNode(state.map, reading);
       state.fromNodeId = node.id;
+      state.activeFloor = node.floorId || state.activeFloor;
       state.positionConfidence = confidenceForReading(reading);
       addAlert(`GPS fix received with ${Math.round(reading.accuracyMeters)} m accuracy. Indoor confidence is ${state.positionConfidence}.`);
       render();
@@ -132,6 +133,7 @@ function setManualStartByKind(kind) {
   }
   const reading = manualReading(node);
   state.fromNodeId = node.id;
+  state.activeFloor = node.floorId || state.activeFloor;
   state.positionConfidence = confidenceForReading(reading);
   addAlert(`Start set to ${node.label || node.id}.`);
   render();
@@ -188,6 +190,7 @@ async function loadAirportMap(airportCode) {
     state.mapError = null;
     state.productionMapBlocked = false;
     state.fromNodeId = defaultStartNode(state.map);
+    state.activeFloor = null;
     if (elements.airportSelect && state.catalogCodes?.includes(state.map.airportCode)) {
       elements.airportSelect.value = state.map.airportCode;
     }
@@ -372,36 +375,43 @@ function renderAlerts() {
   elements.alerts.innerHTML = state.alerts.map((alert) => `<li>${escapeHtml(alert)}</li>`).join("");
 }
 
-// ---- Blueprint 2.5D projection and navigation -----------------------------
+// ---- Blueprint x-ray view and navigation ----------------------------------
 
-const TILT_FACTOR = 0.62;
-const TERMINAL_HEIGHT_METERS = 34;
-
-function proj(x, y, z = 0) {
-  return state.tilt ? [x, y * TILT_FACTOR - z] : [x, y];
-}
-
-function projPoints(points, z = 0) {
-  return points
-    .map(([x, y]) => proj(x, y, z).map((v) => Math.round(v * 10) / 10).join(","))
-    .join(" ");
+function pointsAttr(points) {
+  return points.map(([x, y]) => `${x},${y}`).join(" ");
 }
 
 function projectedBounds(map, padding = 70) {
-  const points = map.nodes.map((node) => proj(node.x, node.y));
+  const points = map.nodes.map((node) => [node.x, node.y]);
   for (const polygon of map.layers?.terminals || []) {
-    for (const point of polygon) points.push(proj(point[0], point[1]));
+    for (const point of polygon) points.push(point);
   }
   const xs = points.map((point) => point[0]);
   const ys = points.map((point) => point[1]);
   const minX = Math.min(...xs) - padding;
-  const minY = Math.min(...ys) - padding - (state.tilt ? TERMINAL_HEIGHT_METERS : 0);
+  const minY = Math.min(...ys) - padding;
   return {
     minX,
     minY,
     width: Math.max(...xs) + padding - minX,
     height: Math.max(...ys) + padding - minY
   };
+}
+
+function mapFloors(map) {
+  const floors = (map.floors || []).map((floor) => floor.id);
+  return floors.sort((a, b) => parseFloat(a.slice(1)) - parseFloat(b.slice(1)));
+}
+
+function floorOfNode(map, nodeId) {
+  return map.nodes.find((node) => node.id === nodeId)?.floorId || null;
+}
+
+// Elements away from the traveler's floor stay visible but ghosted — the
+// x-ray look: you see the whole building, your floor is the bright one.
+function offFloor(map, floorId) {
+  if (!state.activeFloor || !floorId) return "";
+  return floorId === state.activeFloor ? "" : " off-floor";
 }
 
 function applyView() {
@@ -458,10 +468,10 @@ function setupMapNavigation() {
   svg.addEventListener("dblclick", resetView);
 
   elements.resetView?.addEventListener("click", resetView);
-  elements.tiltToggle?.addEventListener("click", () => {
-    state.tilt = !state.tilt;
-    elements.tiltToggle.setAttribute("aria-pressed", String(state.tilt));
-    state.view = null;
+  elements.floorControls?.addEventListener("click", (event) => {
+    const floorId = event.target?.dataset?.floor;
+    if (!floorId) return;
+    state.activeFloor = floorId;
     render();
   });
 }
@@ -471,33 +481,34 @@ function renderBlueprintLayers(map, s) {
   const parts = [];
 
   for (const apron of layers.aprons || []) {
-    parts.push(`<polygon class="bp-apron" points="${projPoints(apron)}" stroke-width="${1.2 * s}"></polygon>`);
+    parts.push(`<polygon class="bp-apron" points="${pointsAttr(apron)}" stroke-width="${1.2 * s}"></polygon>`);
   }
   for (const taxiway of layers.taxiways || []) {
-    parts.push(`<polyline class="bp-taxiway" points="${projPoints(taxiway)}" stroke-width="12"></polyline>`);
+    parts.push(`<polyline class="bp-taxiway" points="${pointsAttr(taxiway)}" stroke-width="12"></polyline>`);
   }
   for (const runway of layers.runways || []) {
-    parts.push(`<polyline class="bp-runway" points="${projPoints(runway.points)}" stroke-width="${runway.width}"></polyline>`);
-    parts.push(`<polyline class="bp-runway-center" points="${projPoints(runway.points)}" stroke-width="${1.6 * s}" stroke-dasharray="30 22"></polyline>`);
+    parts.push(`<polyline class="bp-runway" points="${pointsAttr(runway.points)}" stroke-width="${runway.width}"></polyline>`);
+    parts.push(`<polyline class="bp-runway-center" points="${pointsAttr(runway.points)}" stroke-width="${1.6 * s}" stroke-dasharray="30 22"></polyline>`);
   }
 
-  const terminals = layers.terminals || [];
-  for (const terminal of terminals) {
-    parts.push(`<polygon class="bp-terminal-base" points="${projPoints(terminal)}"></polygon>`);
-  }
-  if (state.tilt) {
-    // Stacked copies from ground to roof read as extruded walls.
-    for (let step = 1; step <= 4; step += 1) {
-      const z = (TERMINAL_HEIGHT_METERS * step) / 4;
-      for (const terminal of terminals) {
-        parts.push(`<polygon class="bp-terminal-wall" points="${projPoints(terminal, z)}" stroke-width="${0.8 * s}"></polygon>`);
-      }
-    }
-  }
-  for (const terminal of terminals) {
-    parts.push(`<polygon class="bp-terminal-roof" points="${projPoints(terminal, state.tilt ? TERMINAL_HEIGHT_METERS : 0)}" stroke-width="${1.6 * s}"></polygon>`);
+  // X-ray shells: the building outline is bright, the interior is a faint
+  // wash so the corridors, gates, and route inside stay fully readable.
+  for (const terminal of layers.terminals || []) {
+    parts.push(`<polygon class="bp-terminal-xray" points="${pointsAttr(terminal)}" stroke-width="${2 * s}"></polygon>`);
   }
   return parts.join("");
+}
+
+function renderFloorControls(map) {
+  if (!elements.floorControls) return;
+  const floors = mapFloors(map);
+  if (floors.length < 2) {
+    elements.floorControls.innerHTML = "";
+    return;
+  }
+  elements.floorControls.innerHTML = floors
+    .map((floorId) => `<button type="button" class="map-button floor-button${floorId === state.activeFloor ? " active" : ""}" data-floor="${escapeHtml(floorId)}" aria-pressed="${floorId === state.activeFloor}">${escapeHtml(floorId.replace(/^L/, "Lvl "))}</button>`)
+    .join("");
 }
 
 function renderMap(route) {
@@ -544,12 +555,11 @@ function renderMap(route) {
   const bounds = projectedBounds(map);
   // Initial view frames the gate/terminal area; the wider airfield
   // (runways, taxiways) is there to discover by zooming out.
-  const focusPoints = map.nodes.map((node) => proj(node.x, node.y));
-  const fxs = focusPoints.map((point) => point[0]);
-  const fys = focusPoints.map((point) => point[1]);
+  const fxs = map.nodes.map((node) => node.x);
+  const fys = map.nodes.map((node) => node.y);
   const focus = {
     x: Math.min(...fxs) - 90,
-    y: Math.min(...fys) - 90 - (state.tilt ? TERMINAL_HEIGHT_METERS : 0),
+    y: Math.min(...fys) - 90,
     w: Math.max(...fxs) - Math.min(...fxs) + 180,
     h: Math.max(...fys) - Math.min(...fys) + 180
   };
@@ -558,6 +568,13 @@ function renderMap(route) {
     state.viewAirport = map.airportCode;
   }
   applyView();
+
+  // The bright floor follows the traveler's position unless they picked one.
+  const floors = mapFloors(map);
+  if (!state.activeFloor || !floors.includes(state.activeFloor)) {
+    state.activeFloor = floorOfNode(map, state.fromNodeId) || floors[0] || null;
+  }
+  renderFloorControls(map);
 
   // Stroke widths, dot radii, and label sizes are expressed in viewBox units,
   // scaled relative to the focused terminal area (not the full airfield) so
@@ -578,7 +595,7 @@ function renderMap(route) {
   const gw = bounds.width * 3;
   const gh = bounds.height * 3;
 
-  const routePath = projPoints(routeNodes.map((node) => [node.x, node.y]));
+  const routePath = pointsAttr(routeNodes.map((node) => [node.x, node.y]));
   elements.map.innerHTML = `
     <defs>
       <pattern id="bp-grid" width="100" height="100" patternUnits="userSpaceOnUse">
@@ -596,26 +613,25 @@ function renderMap(route) {
 }
 
 function renderEdge(map, edge, s = 1) {
-  const from = proj(getNode(map, edge.from).x, getNode(map, edge.from).y);
-  const to = proj(getNode(map, edge.to).x, getNode(map, edge.to).y);
+  const from = getNode(map, edge.from);
+  const to = getNode(map, edge.to);
   const closed = isEdgeClosed(map, edge.from, edge.to) ? " closed" : "";
   const dash = closed ? ` stroke-dasharray="${10 * s} ${8 * s}"` : "";
-  return `<line class="map-edge${closed}" x1="${from[0]}" y1="${from[1]}" x2="${to[0]}" y2="${to[1]}" stroke-width="${5 * s}"${dash}></line>`;
+  return `<line class="map-edge${closed}${offFloor(map, from.floorId)}" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}" stroke-width="${5 * s}"${dash}></line>`;
 }
 
 function renderPlace(map, place, s = 1) {
   const node = getNode(map, place.nodeId);
-  const [x, y] = proj(node.x, node.y);
+  const ghost = offFloor(map, node.floorId);
   return `
-    <circle class="place-dot bp-${place.kind}" cx="${x}" cy="${y}" r="${place.kind === "gate" ? 10 * s : 8 * s}" stroke-width="${2.5 * s}"></circle>
-    <text class="place-label" x="${x + 14 * s}" y="${y + 6 * s}" font-size="${17 * s}">${escapeHtml(place.label)}</text>
+    <circle class="place-dot bp-${place.kind}${ghost}" cx="${node.x}" cy="${node.y}" r="${place.kind === "gate" ? 10 * s : 8 * s}" stroke-width="${2.5 * s}"></circle>
+    <text class="place-label${ghost}" x="${node.x + 14 * s}" y="${node.y + 6 * s}" font-size="${17 * s}">${escapeHtml(place.label)}</text>
   `;
 }
 
 function renderUserDot(map, s = 1) {
   const node = getNode(map, state.fromNodeId);
-  const [x, y] = proj(node.x, node.y);
-  return `<circle class="user-halo" cx="${x}" cy="${y}" r="${24 * s}"></circle><circle class="user-dot" cx="${x}" cy="${y}" r="${13 * s}" stroke-width="${5 * s}"></circle>`;
+  return `<circle class="user-halo" cx="${node.x}" cy="${node.y}" r="${24 * s}"></circle><circle class="user-dot" cx="${node.x}" cy="${node.y}" r="${13 * s}" stroke-width="${5 * s}"></circle>`;
 }
 
 function row(label, value) {

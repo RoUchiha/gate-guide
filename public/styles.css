@@ -389,19 +389,35 @@ h2 {
   stroke: rgb(220 235 250 / 55%);
 }
 
-.bp-terminal-base {
-  fill: rgb(3 12 22 / 90%);
-}
-
-.bp-terminal-wall {
-  fill: #0e2942;
-  stroke: rgb(40 90 140 / 35%);
-}
-
-.bp-terminal-roof {
-  fill: #2c5a86;
-  stroke: #6fd0ff;
+/* X-ray shell: bright architectural outline, near-transparent interior so
+   corridors, gates, and the route inside stay fully readable. */
+.bp-terminal-xray {
+  fill: rgb(89 194 255 / 7%);
+  stroke: #59c2ff;
   stroke-linejoin: round;
+  stroke-opacity: 0.8;
+}
+
+.off-floor {
+  opacity: 0.15;
+}
+
+.floor-controls {
+  display: flex;
+  gap: 0.3rem;
+  flex-wrap: wrap;
+  justify-content: end;
+}
+
+.floor-button {
+  padding: 0.4rem 0.55rem;
+  font-size: 0.75rem;
+  opacity: 0.55;
+}
+
+.floor-button.active {
+  opacity: 1;
+  outline: 2px solid var(--teal);
 }
 
 .terminal-wall {
