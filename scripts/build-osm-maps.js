@@ -147,7 +147,12 @@ function buildAirport(iata, elements) {
   const osmNodes = new Map();
   const ways = [];
   for (const element of elements) {
-    if (element.type === "node") osmNodes.set(element.id, element);
+    // Overpass emits way-member nodes twice (tagged from the query, tagless
+    // from recursion) — a tagless duplicate must never clobber a tagged one,
+    // or gates that sit on corridors degrade into anonymous junctions.
+    if (element.type === "node" && (element.tags || !osmNodes.has(element.id))) {
+      osmNodes.set(element.id, element);
+    }
     if (element.type === "way" && Array.isArray(element.nodes)) ways.push(element);
   }
 
@@ -183,8 +188,10 @@ function buildAirport(iata, elements) {
     // Only genuine pedestrian ways enter the walk graph — display geometry
     // (terminals, runways, roads, rail, water) is a whitelist away from ever
     // becoming a "walkable" corridor.
+    // indoor=yes/area rings are room outlines, not paths — letting them into
+    // the graph lets gates snap onto isolated rings and breaks connectivity.
     const isWalkway = /^(footway|corridor|pedestrian|steps)$/.test(way.tags?.highway || "")
-      || ["corridor", "area", "yes"].includes(way.tags?.indoor || "");
+      || (!way.tags?.highway && way.tags?.indoor === "corridor");
     if (!isWalkway || way.tags?.barrier === "security_check") continue;
     const accessible = way.tags?.highway !== "steps";
     const level = firstLevel(way.tags);
@@ -233,6 +240,15 @@ function buildAirport(iata, elements) {
   if (!walkVertices.length) return buildGateLocations(iata, elements, "no mapped walkways");
 
   const snapped = [];
+  if (process.env.GG_DEBUG) {
+    const gatePois = pois.filter((poi) => poi.kind === "gate");
+    const distances = gatePois.slice(0, 200).map((poi) => {
+      let best = Infinity;
+      for (const vertex of walkVertices) best = Math.min(best, haversineMeters(poi, vertex));
+      return Math.round(best);
+    }).sort((a, b) => a - b);
+    console.log(`[debug] gate POIs ${gatePois.length}; snap distances min ${distances[0]}, median ${distances[Math.floor(distances.length / 2)]}, max ${distances[distances.length - 1]}`);
+  }
   for (const poi of pois) {
     let best = null;
     let bestMeters = Infinity;
@@ -293,6 +309,14 @@ function buildAirport(iata, elements) {
     const component = componentOf.get(gate.id);
     gatesPerComponent.set(component, (gatesPerComponent.get(component) || 0) + 1);
   }
+  if (process.env.GG_DEBUG) {
+    const walkable = ways.filter((way) => /^(footway|corridor|pedestrian|steps)$/.test(way.tags?.highway || "")
+      || (!way.tags?.highway && way.tags?.indoor === "corridor"));
+    console.log(`\n[debug] walkable ways ${walkable.length}, vertices ${vertices.size}, edges ${edges.size}, snapped POIs ${snapped.length}`);
+    console.log(`[debug] gate components:`, [...gatesPerComponent.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5));
+    console.log(`[debug] total gates ${gateVertices.length}`);
+  }
+
   const [mainComponent, connectedGates] = [...gatesPerComponent.entries()]
     .sort((a, b) => b[1] - a[1])[0] || [null, 0];
 
@@ -340,7 +364,9 @@ function buildGateLocations(iata, elements, walkwayReason) {
     return { rejected: `${walkwayReason}; only ${gates.length} mapped gate position(s)` };
   }
 
-  return emitBundle(iata, points, [], "approximate", { gates: gates.length, totalGates: gates.length }, elements);
+  const result = emitBundle(iata, points, [], "approximate", { gates: gates.length, totalGates: gates.length }, elements);
+  result.stats.fallbackReason = walkwayReason;
+  return result;
 }
 
 // Ramer-Douglas-Peucker polyline simplification (epsilon in meters).
@@ -568,7 +594,7 @@ for (const iata of airports) {
       );
       catalogEntries.push({ airportCode: iata });
       const { stats } = result;
-      console.log(`ok [${stats.routing}] (${stats.gates}/${stats.totalGates} gates, ${stats.nodes} nodes, ${stats.edges} edges)`);
+      console.log(`ok [${stats.routing}] (${stats.gates}/${stats.totalGates} gates, ${stats.nodes} nodes, ${stats.edges} edges)${stats.fallbackReason ? ` — walkways unavailable: ${stats.fallbackReason}` : ""}`);
     }
   } catch (error) {
     rejected.push(`${iata}: ${error.message}`);
