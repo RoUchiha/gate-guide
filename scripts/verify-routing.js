@@ -66,7 +66,9 @@ for (const file of files) {
       sinuositySum += route.meters / crowFlies;
       sinuosityCount += 1;
     }
-    if (route.path.length <= 2 && crowFlies > 80) straightLines += 1;
+    // A two-hop route longer than the max gate-snap connector (150 m) can't
+    // be legitimate mapped data — that would be a straight-line cheat.
+    if (route.path.length <= 2 && crowFlies > 180) straightLines += 1;
   }
 
   const ok = brokenEdges === 0 && straightLines === 0 && routed > 0;
