@@ -31,7 +31,7 @@ export const demoAirportMap = {
     { from: "gate-a18", to: "gate-a21", meters: 48, accessible: true }
   ],
   closures: [
-    { edgeKey: "food-court::junction-a2", reason: "Retail construction", until: "2026-07-10T05:00:00Z" }
+    { edgeKey: "food-court::junction-a2", reason: "Retail construction", until: "2099-01-01T00:00:00Z" }
   ],
   places: [
     { id: "arrival-a", kind: "arrival", label: "Arrival A", nodeId: "arrival-a" },

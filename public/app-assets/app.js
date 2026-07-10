@@ -33,6 +33,9 @@ const elements = {
   alerts: document.querySelector("#alerts"),
   routeTitle: document.querySelector("#route-title"),
   routeMeta: document.querySelector("#route-meta"),
+  gateCode: document.querySelector("#gate-code"),
+  zoomIn: document.querySelector("#zoom-in"),
+  zoomOut: document.querySelector("#zoom-out"),
   routeSteps: document.querySelector("#route-steps"),
   map: document.querySelector("#map"),
   providerHealth: document.querySelector("#provider-health"),
@@ -500,6 +503,27 @@ function resetView() {
   render();
 }
 
+// The departure-board gate cell flips when the gate changes.
+function setGateReadout(label) {
+  if (!elements.gateCode) return;
+  if (elements.gateCode.textContent === label) return;
+  elements.gateCode.textContent = label;
+  elements.gateCode.classList.remove("flap");
+  void elements.gateCode.offsetWidth;
+  elements.gateCode.classList.add("flap");
+}
+
+function zoomBy(factor) {
+  if (!state.view) return;
+  const width = Math.min(Math.max(state.view.w * factor, 40), 60000);
+  const height = width * (state.view.h / state.view.w);
+  state.view.x += (state.view.w - width) / 2;
+  state.view.y += (state.view.h - height) / 2;
+  state.view.w = width;
+  state.view.h = height;
+  applyView();
+}
+
 function setupMapNavigation() {
   const svg = elements.map;
   if (!svg) return;
@@ -521,9 +545,18 @@ function setupMapNavigation() {
   }, { passive: false });
 
   let drag = null;
+  const pinchPointers = new Map();
+  let pinch = null;
   svg.addEventListener("pointerdown", (event) => {
     if (!state.view) return;
-    drag = { id: event.pointerId, x: event.clientX, y: event.clientY, startX: event.clientX, startY: event.clientY, moved: 0 };
+    pinchPointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    if (pinchPointers.size === 2) {
+      const [a, b] = [...pinchPointers.values()];
+      pinch = { distance: Math.hypot(a.x - b.x, a.y - b.y) };
+      drag = null;
+    } else {
+      drag = { id: event.pointerId, x: event.clientX, y: event.clientY, startX: event.clientX, startY: event.clientY, moved: 0 };
+    }
     try {
       svg.setPointerCapture(event.pointerId);
     } catch {
@@ -532,7 +565,33 @@ function setupMapNavigation() {
     svg.classList.add("dragging");
   });
   svg.addEventListener("pointermove", (event) => {
-    if (!drag || event.pointerId !== drag.id || !state.view) return;
+    if (!state.view) return;
+    if (pinchPointers.has(event.pointerId)) {
+      pinchPointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
+    }
+
+    // Two fingers: pinch to zoom around the midpoint.
+    if (pinch && pinchPointers.size === 2) {
+      const [a, b] = [...pinchPointers.values()];
+      const distance = Math.hypot(a.x - b.x, a.y - b.y);
+      if (distance > 20 && pinch.distance > 20) {
+        const rect = svg.getBoundingClientRect();
+        const fx = ((a.x + b.x) / 2 - rect.left) / rect.width;
+        const fy = ((a.y + b.y) / 2 - rect.top) / rect.height;
+        const factor = pinch.distance / distance;
+        const width = Math.min(Math.max(state.view.w * factor, 40), 60000);
+        const height = width * (state.view.h / state.view.w);
+        state.view.x += (state.view.w - width) * fx;
+        state.view.y += (state.view.h - height) * fy;
+        state.view.w = width;
+        state.view.h = height;
+        pinch.distance = distance;
+        applyView();
+      }
+      return;
+    }
+
+    if (!drag || event.pointerId !== drag.id) return;
     const rect = svg.getBoundingClientRect();
     state.view.x -= (event.clientX - drag.x) * (state.view.w / rect.width);
     state.view.y -= (event.clientY - drag.y) * (state.view.h / rect.height);
@@ -541,6 +600,9 @@ function setupMapNavigation() {
     drag.y = event.clientY;
     applyView();
   });
+  elements.zoomIn?.addEventListener("click", () => zoomBy(1 / 1.3));
+  elements.zoomOut?.addEventListener("click", () => zoomBy(1.3));
+
   const endDrag = (event) => {
     // A press that never really moved is a tap: entrances and security set
     // the start point, gates set the destination.
@@ -560,6 +622,9 @@ function setupMapNavigation() {
       }
     }
     drag = null;
+    if (event) pinchPointers.delete(event.pointerId);
+    else pinchPointers.clear();
+    if (pinchPointers.size < 2) pinch = null;
     svg.classList.remove("dragging");
   };
   svg.addEventListener("pointerup", endDrag);
@@ -704,6 +769,7 @@ function renderMap(route) {
   }
 
   if (state.productionMapBlocked) {
+    setGateReadout("—");
     elements.routeTitle.textContent = "Production map unavailable";
     elements.routeMeta.textContent = state.mapError || "Map provider is not configured.";
     elements.routeSteps.innerHTML = "<li>Configure a production airport map catalog or bundle host before routing.</li>";
@@ -726,14 +792,19 @@ function renderMap(route) {
 
   const routeNodes = route.path.map((nodeId) => getNode(map, nodeId));
   const activeGate = getNode(map, state.destinationNodeId).label;
+  setGateReadout(activeGate || "—");
   elements.routeTitle.textContent = route.ok
     ? route.approximate
-      ? `Toward gate ${activeGate} (approximate)`
-      : `Route to gate ${activeGate}`
-    : "No route available";
+      ? `Follow airport signage — corridor data isn't mapped here yet`
+      : `Walking route on ${map.airportCode} corridors`
+    : route.reason;
   elements.routeMeta.innerHTML = route.ok
-    ? `${route.approximate ? "≈ " : ""}${formatDistance(route.meters)}<br>${route.etaMinutes} min walk${route.approximate ? "<br>approximate" : ""}`
-    : escapeHtml(route.reason);
+    ? [
+        `<span class="chip">${route.approximate ? "≈ " : ""}${formatDistance(route.meters)}</span>`,
+        `<span class="chip">${route.etaMinutes} min</span>`,
+        route.approximate ? `<span class="chip warn">approx</span>` : ""
+      ].join("")
+    : "";
 
   elements.routeSteps.innerHTML = route.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("");
 
