@@ -62,9 +62,12 @@ test("falls back to the app shell for extensionless client routes", async () => 
 
 test("blocks encoded path traversal outside the public root", async () => {
   // URL parsing normalizes plain and %2e-encoded dot segments, but an
-  // encoded backslash survives to the filesystem join and must be rejected.
+  // encoded backslash survives to the filesystem join. On Windows it is a
+  // separator (guard responds 403); on POSIX it is a literal filename that
+  // does not exist (404). Either way the file must never be served.
   const res = await request("/..%5Cpackage.json");
-  assert.equal(res.statusCode, 403);
+  assert.ok([403, 404].includes(res.statusCode), `expected 403 or 404, got ${res.statusCode}`);
+  assert.doesNotMatch(String(res.body || ""), /"name":\s*"gate-guide"/);
 });
 
 test("rejects non-GET methods", async () => {
