@@ -1,6 +1,6 @@
 import { demoAirportMap, wifiProfileFor } from "./sample-data.js";
 import { ApiFlightProvider, summarizeConnectionRisk } from "./flight-provider.js";
-import { confidenceForReading, browserGpsReading, manualReading, projectOutdoorGpsToTerminal } from "./positioning.js";
+import { confidenceForReading, browserGpsReading, manualReading, projectGpsToMap } from "./positioning.js";
 import { connectToWifi, wifiCapability } from "./wifi-assistant.js";
 import { formatDistance, getNode, isEdgeClosed, nearestNode, placeToNode, routeBetween } from "./router.js";
 
@@ -67,6 +67,7 @@ elements.form.addEventListener("submit", async (event) => {
       date: elements.flightDate.value
     }, { allowDemoFallback: state.providerStatus?.flight === "demo" });
     await applyItinerary(itinerary);
+    startLiveRefresh();
   } catch (error) {
     addAlert(`Could not resolve that flight: ${error.message}`);
   } finally {
@@ -79,6 +80,36 @@ elements.form.addEventListener("submit", async (event) => {
     addAlert("Demo gate changed to A21. Route recalculated.");
   }, 8000);
 });
+
+// While a live flight is tracked, refresh it every minute so gate changes
+// and status updates arrive without re-searching. Paused while the tab is
+// hidden; the existing gate-change alert and rerouting fire on differences.
+const LIVE_REFRESH_MS = 60000;
+
+function startLiveRefresh() {
+  stopLiveRefresh();
+  if (state.itinerary?.providerMode !== "live") return;
+  state.liveRefreshTimer = window.setInterval(async () => {
+    if (document.hidden || !state.itinerary || state.itinerary.providerMode !== "live") return;
+    try {
+      const leg = state.itinerary.legs[0];
+      const refreshed = await state.provider.resolveFlight(
+        { airline: leg.airline, flightNumber: leg.flightNumber, date: leg.date },
+        { allowDemoFallback: false }
+      );
+      await applyItinerary(refreshed, { quiet: true });
+    } catch {
+      // A missed refresh is fine; the next tick tries again.
+    }
+  }, LIVE_REFRESH_MS);
+}
+
+function stopLiveRefresh() {
+  if (state.liveRefreshTimer) {
+    window.clearInterval(state.liveRefreshTimer);
+    state.liveRefreshTimer = null;
+  }
+}
 
 function setTracking(active) {
   if (!elements.trackButton) return;
@@ -109,12 +140,16 @@ elements.useGps.addEventListener("click", () => {
   }
   navigator.geolocation.getCurrentPosition(
     (position) => {
-      const reading = projectOutdoorGpsToTerminal(browserGpsReading(position), state.map);
+      const reading = projectGpsToMap(browserGpsReading(position), state.map);
+      if (!reading) {
+        addAlert(`Your GPS position is outside ${state.map.airportCode} — pick a start point on the map or choose the right airport.`);
+        return;
+      }
       const node = nearestNode(state.map, reading);
       state.fromNodeId = node.id;
       state.activeFloor = node.floorId || state.activeFloor;
       state.positionConfidence = confidenceForReading(reading);
-      addAlert(`GPS fix received with ${Math.round(reading.accuracyMeters)} m accuracy. Indoor confidence is ${state.positionConfidence}.`);
+      addAlert(`GPS fix received with ${Math.round(reading.accuracyMeters)} m accuracy — starting near ${node.label || "your position"}.`);
       render();
     },
     () => addAlert("Location permission was denied or unavailable. Manual start remains active."),
@@ -243,8 +278,9 @@ async function loadAirportMap(airportCode) {
   }
 }
 
-async function applyItinerary(itinerary) {
+async function applyItinerary(itinerary, { quiet = false } = {}) {
   const previousGate = state.itinerary?.legs?.[0]?.gate;
+  const previousStatus = state.itinerary?.legs?.[0]?.status;
   state.itinerary = itinerary;
   const activeLeg = itinerary.legs[0];
 
@@ -252,32 +288,43 @@ async function applyItinerary(itinerary) {
     await loadAirportMap(activeLeg.origin);
   }
 
-  state.destinationNodeId = resolveDestinationNode(activeLeg.gate);
+  state.destinationNodeId = resolveDestinationNode(activeLeg.gate, { quiet });
   const risk = summarizeConnectionRisk(itinerary);
 
-  for (const warning of itinerary.warnings || []) {
-    addAlert(warning.includes("gate assignment")
-      ? "The airline hasn't published a gate for this flight yet."
-      : warning);
+  // Quiet refreshes only announce actual changes — never re-post the same
+  // provider notes every minute.
+  if (!quiet) {
+    for (const warning of itinerary.warnings || []) {
+      addAlert(warning.includes("gate assignment")
+        ? "The airline hasn't published a gate for this flight yet."
+        : warning);
+    }
+    if (risk) addAlert(risk.message);
   }
-  if (previousGate && previousGate !== activeLeg.gate) {
-    addAlert(`Gate changed from ${previousGate} to ${activeLeg.gate}.`);
+  if (previousGate && activeLeg.gate && previousGate !== activeLeg.gate) {
+    addAlert(`Gate changed from ${previousGate} to ${activeLeg.gate}. Route updated.`);
   }
-  if (risk) addAlert(risk.message);
+  if (quiet && previousStatus && activeLeg.status && previousStatus !== activeLeg.status) {
+    addAlert(`Flight status: ${humanizeStatus(activeLeg.status)}.`);
+  }
 
   render();
 }
 
-function resolveDestinationNode(gate) {
+function resolveDestinationNode(gate, { quiet = false } = {}) {
   if (gate) {
     try {
       return placeToNode(state.map, gate.toLowerCase());
     } catch {
-      addAlert(`Gate ${gate} is not present in the loaded ${state.map.airportCode} map. Routing to the closest known gate.`);
+      if (!quiet) addAlert(`Gate ${gate} is not on the ${state.map.airportCode} map. Routing to the closest known gate.`);
     }
-  } else {
-    addAlert("Live provider did not return a gate yet. Routing to the first known departure gate.");
+  } else if (!quiet) {
+    addAlert("No gate published yet — routing to the first known departure gate.");
   }
+
+  // On quiet refreshes with no published gate, keep whatever the traveler
+  // currently has (possibly a hand-picked destination).
+  if (quiet && !gate && state.destinationNodeId) return state.destinationNodeId;
 
   return state.map.places.find((place) => place.kind === "gate")?.nodeId || state.map.nodes[0].id;
 }

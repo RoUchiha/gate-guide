@@ -4,6 +4,7 @@ export const demoAirportMap = {
   version: "2026.07.demo",
   source: "airport-validated-demo-bundle",
   scale: { unit: "meter", pixelsPerMeter: 3 },
+  origin: { minLon: -97.03843, maxLat: 32.90651, metersPerDegLon: 93470 },
   floors: [{ id: "F1", label: "Departures" }],
   nodes: [
     { id: "arrival-a", floorId: "F1", x: 70, y: 430, kind: "arrival", label: "Arrival A" },

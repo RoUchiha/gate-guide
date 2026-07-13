@@ -545,6 +545,9 @@ function emitBundle(iata, kept, keptEdges, routing, gateStats, elements = []) {
       attribution: "Map data © OpenStreetMap contributors, ODbL",
       routing,
       scale: { unit: "meter", pixelsPerMeter: 1 },
+      // Geographic origin of the local meter grid, so live GPS fixes can be
+      // projected onto the map exactly.
+      origin: { minLon, maxLat, metersPerDegLon: Math.round(metersPerDegLon * 100) / 100 },
       floors: levels.map((id) => ({ id, label: `Level ${id.slice(1)}` })),
       layers,
       nodes,
