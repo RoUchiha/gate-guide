@@ -4,11 +4,11 @@ Spec-driven airport wayfinding PWA for guiding travelers from check-in, security
 
 **Live app:** https://gate-guide-ashen.vercel.app
 
-- **Live flight tracking with no API key**: community ADS-B data (api.adsb.lol live aircraft state + api.adsbdb.com route records), with OpenSky Network as fallback and FlightAware AeroAPI as the optional gate-capable upgrade. ADS-B sources honestly report gates as "not published" — gate assignments only exist in airline/airport feeds.
-- **Real airport maps for 200+ airports worldwide**, generated from OpenStreetMap by `scripts/build-osm-maps.js` (Map data © OpenStreetMap contributors, ODbL) and refreshed weekly by a scheduled GitHub Actions workflow. Two honest tiers: airports with routable OSM indoor corridors (LHR, CDG, AMS, FRA, MUC, ZRH, LAX, and ~20 more) get full turn-by-turn routing; the rest ship real mapped gate/security/entrance positions with clearly-labeled approximate, signage-based guidance (marked "≈" in the airport picker). Corridors are never fabricated.
+- **Live flight tracking with no API key**: community ADS-B data (api.adsb.lol live aircraft state + api.adsbdb.com route records), with OpenSky Network as fallback and FlightAware AeroAPI as the optional gate-capable upgrade. ADS-B sources honestly report gates as "not published" ? gate assignments only exist in airline/airport feeds.
+- **Real airport maps for 200+ airports worldwide**, generated from OpenStreetMap by `scripts/build-osm-maps.js` (Map data ? OpenStreetMap contributors, ODbL) and refreshed weekly by a scheduled GitHub Actions workflow. Two honest tiers: airports with routable OSM indoor corridors (LHR, CDG, AMS, FRA, MUC, ZRH, LAX, and ~20 more) get full turn-by-turn routing; the rest ship real mapped gate/security/entrance positions with clearly-labeled approximate, signage-based guidance (marked "?" in the airport picker). Corridors are never fabricated.
 - Weighted, closure-aware routing with an accessible-route mode that avoids stairs-only edges.
 - Installable PWA: offline app shell, versioned service-worker caches, dark mode, real icons.
-- Strict production modes: `GATE_GUIDE_MAP_MODE=production` refuses demo-map fallback; `GATE_GUIDE_FLIGHT_MODE=production` refuses demo flight data — the app shows honest "not configured" errors instead of fabricated results.
+- Strict production modes: `GATE_GUIDE_MAP_MODE=production` refuses demo-map fallback; `GATE_GUIDE_FLIGHT_MODE=production` refuses demo flight data ? the app shows honest "not configured" errors instead of fabricated results.
 
 This repository is intentionally built around production constraints:
 
@@ -26,7 +26,7 @@ npm run verify   # spec check + tests + build
 npm start        # http://127.0.0.1:4173
 ```
 
-No dependencies to install — the app is plain ES modules on Node 20+.
+No dependencies to install ? the app is plain ES modules on Node 20+.
 
 Useful scripts:
 
@@ -41,10 +41,10 @@ Useful scripts:
 
 ## Architecture
 
-- `index.js` — Vercel serverless entrypoint: serves the PWA from `public/` and the API (`/api/providers`, `/api/flight`, `/api/airport-map`, `/api/airport-map/catalog`) with security headers and a CSP.
-- `server/providers.js` — FlightAware AeroAPI adapter, production map catalog/bundle loader, map validation.
-- `public/app-assets/` — browser modules (UI state, Dijkstra routing, positioning confidence, Wi-Fi assist). They live here, not `public/src/`, because Vercel treats `public/src/*.js` as serverless entrypoints.
-- `docs/specs/` — the specs the implementation is checked against.
+- `index.js` ? Vercel serverless entrypoint: serves the PWA from `public/` and the API (`/api/providers`, `/api/flight`, `/api/airport-map`, `/api/airport-map/catalog`) with security headers and a CSP.
+- `server/providers.js` ? FlightAware AeroAPI adapter, production map catalog/bundle loader, map validation.
+- `public/app-assets/` ? browser modules (UI state, Dijkstra routing, positioning confidence, Wi-Fi assist). They live here, not `public/src/`, because Vercel treats `public/src/*.js` as serverless entrypoints.
+- `docs/specs/` ? the specs the implementation is checked against.
 
 ## Specs
 
@@ -65,7 +65,7 @@ All configuration is via environment variables (see `.env.example`):
 | `GATE_GUIDE_FLIGHT_MODE` | Set to `production` to refuse demo flight fallback (503 instead of fake data) |
 | `GATE_GUIDE_MAP_MODE` | Set to `production` to refuse demo-map fallback (returns 503 instead) |
 | `AIRPORT_MAP_CATALOG_URL` | Remote catalog JSON of airport-approved bundles (overrides bundled maps) |
-| `AIRPORT_MAP_BUNDLE_BASE_URL` | Direct bundle host (`{base}/{IATA}.json`) — alternative to the catalog |
+| `AIRPORT_MAP_BUNDLE_BASE_URL` | Direct bundle host (`{base}/{IATA}.json`) ? alternative to the catalog |
 | `AIRPORT_MAP_BUNDLE_TOKEN` | Optional bearer token for the map host |
 
 Bundled OSM maps in `public/maps/` are always available as a production map source; regenerate or extend them with `node scripts/build-osm-maps.js [IATA ...]`. Without any flight key the app runs flight lookups in demo mode (unless strict mode) and says so in the UI. See [Provider Integrations](docs/specs/provider-integrations.md) for contracts and payload shapes.
@@ -92,3 +92,15 @@ Invoke-RestMethod "https://gate-guide-ashen.vercel.app/api/airport-map?airport=D
 - Connect native iOS/Android Wi-Fi join helpers to the `NativeAirportBridge` seam.
 - Run calibration surveys per terminal and publish per-floor positioning confidence models.
 - Add SSO, audit logs, observability, privacy retention rules, and on-call runbooks before enterprise rollout.
+
+## License and usage
+
+<!-- proprietary-license-notice -->
+
+Copyright (c) 2026 Roshaan Singh. All rights reserved.
+
+This repository is **source-available, not open source**. It is public for
+portfolio review and evaluation only. No permission is granted to copy, modify,
+redistribute, deploy, commercialize, train models on, or create derivative works
+from the source except as GitHub's Terms of Service may require for GitHub
+features. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
